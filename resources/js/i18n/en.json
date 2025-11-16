@@ -1,0 +1,26 @@
+{
+    "navbar": {
+        "recipes": "Recipes",
+        "aiAssistant": "AI Assistant",
+        "stores": "Stores",
+        "signIn": "Sign In",
+        "dashboard": "Dashboard",
+        "admin": "Admin Panel"
+    },
+    "hero": {
+        "title": "Cook Smarter,<br />Not Harder",
+        "withJood": "with JOOD",
+        "desc": "JOOD is an AI-powered smart cooking platform that helps you create personalized recipes based on the ingredients you already have — and suggests missing ingredients with intelligent replacements.",
+        "tryNow": "Try Now"
+    },
+    "features": {
+        "title": "Why Choose JOOD?",
+        "subtitle": "Experience the future of cooking with AI-powered assistance",
+        "aiRecipe": "AI Recipe Generator",
+        "aiRecipeDesc": "Enter your available ingredients and get instant, smart recipe ideas tailored to your kitchen.",
+        "missingIng": "Missing Ingredient Suggestions",
+        "missingIngDesc": "JOOD analyzes your recipe and suggests what's missing — including healthy and budget-friendly alternatives.",
+        "smartAssistant": "Smart Cooking Assistant",
+        "smartAssistantDesc": "Ask anything while cooking — substitutes, marination, cooking time, seasoning, and more."
+    }
+}

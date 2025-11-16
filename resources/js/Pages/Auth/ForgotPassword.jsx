@@ -25,7 +25,6 @@ export default function JoodForgotPassword() {
         setSubmitted(true);
     };
 
-
     return (
         <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
             <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50 dark:from-[#0F0F0F] dark:via-[#1a1a1a] dark:to-[#0a2f1a] transition-colors duration-500">
@@ -49,12 +48,12 @@ export default function JoodForgotPassword() {
                 </div>
 
                 {/* Dark mode toggle */}
-                <button
+                {/* <button
                     onClick={() => setDarkMode(!darkMode)}
                     className="fixed top-6 right-6 z-50 p-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                     {darkMode ? "☀️" : "🌙"}
-                </button>
+                </button> */}
 
                 {/* Main container */}
                 <div className="relative min-h-screen flex">
@@ -66,9 +65,7 @@ export default function JoodForgotPassword() {
                     >
                         <div className="relative w-full h-full flex flex-col justify-center px-16 xl:px-24">
                             {/* Logo and brand */}
-                            <div className="mb-12 transform hover:scale-105 transition-transform duration-300">
-                               
-                            </div>
+                            <div className="mb-12 transform hover:scale-105 transition-transform duration-300"></div>
 
                             {/* Welcome message */}
                             <div className="mb-12">
@@ -83,8 +80,6 @@ export default function JoodForgotPassword() {
                                     your smart cooking journey in no time
                                 </p>
                             </div>
-
-                          
                         </div>
                     </div>
 
