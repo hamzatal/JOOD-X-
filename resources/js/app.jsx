@@ -9,7 +9,13 @@ import { createRoot } from "react-dom/client";
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 
-const appName = import.meta.env.VITE_APP_NAME || "Laravel";
+const appName = import.meta.env.VITE_APP_NAME || "JOOD";
+
+const defaultLocale = "ar";
+let currentLocale = sessionStorage.getItem("locale") || defaultLocale;
+i18next.changeLanguage(currentLocale);
+document.documentElement.dir = currentLocale === "ar" ? "rtl" : "ltr";
+document.documentElement.lang = currentLocale;
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -20,21 +26,17 @@ createInertiaApp({
         ),
     setup({ el, App, props }) {
         const root = createRoot(el);
-
         root.render(
             <I18nextProvider i18n={i18next}>
                 <App {...props} />
             </I18nextProvider>
         );
     },
-    progress: {
-        color: "#5F7F3B",
-    },
+    progress: { color: "#4E6B32" },
 });
 
-window.changeLanguage = (lng) => {
-    i18next.changeLanguage(lng);
-    sessionStorage.setItem("locale", lng);
-    document.documentElement.dir = lng === "ar" ? "rtl" : "ltr";
-    document.documentElement.lang = lng;
+window.switchLanguage = () => {
+    const newLng = i18next.language === "ar" ? "en" : "ar";
+    sessionStorage.setItem("locale", newLng);
+    window.location.reload(); 
 };

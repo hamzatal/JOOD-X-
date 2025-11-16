@@ -99,6 +99,7 @@ export default function JoodLogin() {
                                     <span className="block bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">
                                         smart kitchen
                                     </span>
+                           
                                 </h2>
                                 <p className="text-lg text-gray-600 dark:text-gray-400">
                                     Transform the way you cook with AI-powered
