@@ -4,17 +4,16 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Api\AiRecipeController;
+use App\Http\Controllers\TrendingRecipesController;
+use App\Http\Controllers\MealDBProxyController;
+use App\Http\Controllers\AIRecipesController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
+
+
+Route::get('/trending-recipes', [TrendingRecipesController::class, 'index']);
+Route::get('/mealdb/{endpoint}', [MealDBProxyController::class, 'proxy']);
+Route::get('/ai-recipes', [AIRecipesController::class, 'index']);
 
 Route::get('/', function () {
     return Inertia::render('HomePage', [
@@ -34,5 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+Route::get('/ai-recipes', [AiRecipeController::class, 'index']);
 
 require __DIR__ . '/auth.php';

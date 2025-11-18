@@ -1,0 +1,22 @@
+{
+    "navbar": {
+        "home": "Home",
+        "recipes": "AI Recipes",
+        "whatCook": "What Can I Cook?",
+        "trending": "Trending",
+        "stores": "Stores",
+        "assistant": "AI Assistant",
+        "login": "Sign In",
+        "dashboard": "Dashboard",
+        "admin": "Admin"
+    },
+    "hero": {
+        "title": "Discover Smart Recipes Based on Your Ingredients",
+        "withJood": "With JOOD",
+        "desc": "JOOD uses advanced AI to suggest personalized recipes, help you shop smarter, and improve your cooking experience.",
+        "cta": "Try Now",
+        "trendingSection": "Weekly Trending",
+        "viewRecipe": "View Recipe",
+        "generateSimilar": "Generate Similar"
+    }
+}
