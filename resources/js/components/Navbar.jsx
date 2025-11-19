@@ -39,13 +39,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     </Link>
 
                     <Link
-                        href="/recipes"
-                        className="flex items-center gap-2 hover:text-green-400"
-                    >
-                        <ChefHat size={18} /> {t("navbar.recipes")}
-                    </Link>
-
-                    <Link
                         href="/what-to-cook"
                         className="flex items-center gap-2 hover:text-green-400"
                     >
@@ -53,10 +46,10 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     </Link>
 
                     <Link
-                        href="/trending"
+                        href="/recipes"
                         className="flex items-center gap-2 hover:text-green-400"
                     >
-                        <Flame size={18} /> {t("navbar.trending")}
+                        <ChefHat size={18} /> {t("navbar.recipes")}
                     </Link>
 
                     <Link
@@ -116,19 +109,18 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                         <Link href="/" className="flex items-center gap-2">
                             <Home size={18} /> {t("navbar.home")}
                         </Link>
+                        <Link
+                            href="/what-to-cook"
+                            className="flex items-center gap-2"
+                        >
+                            <Lightbulb size={18} /> {t("navbar.whatCook")}
+                        </Link>
 
                         <Link
                             href="/recipes"
                             className="flex items-center gap-2"
                         >
                             <ChefHat size={18} /> {t("navbar.recipes")}
-                        </Link>
-
-                        <Link
-                            href="/what-to-cook"
-                            className="flex items-center gap-2"
-                        >
-                            <Lightbulb size={18} /> {t("navbar.whatCook")}
                         </Link>
 
                         <Link

@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use Illuminate\Support\Facades\Http;
+use App\Http\Controllers\Controller;
 
 class MealDBProxyController extends Controller
 {
