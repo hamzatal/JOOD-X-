@@ -15,6 +15,9 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+Route::get('/what-to-cook', function () {
+    return Inertia::render('WhatToCook');
+})->name('what-to-cook');
 
 
 // Authenticated pages

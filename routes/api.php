@@ -17,3 +17,9 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 });
+// AI recipes grid (cached daily)
+Route::get('/ai-recipes', [AiRecipesController::class, 'index']);
+Route::post('/ai-recipes/generate', [AiRecipesController::class, 'generate']);
+
+// Chat / what-to-cook endpoint
+Route::post('/what-to-cook', [WhatToCookController::class, 'handle']);
