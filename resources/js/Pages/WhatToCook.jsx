@@ -64,7 +64,7 @@ export default function WhatToCook() {
                         onClick={() => setTab("search")}
                         className={`px-4 py-2 rounded-xl ${
                             tab === "search"
-                                ? "bg-gradient-to-r from-purple-600 to-purple-500"
+                                ? "bg-gradient-to-r from-green-600 to-green-500"
                                 : "bg-gray-800/60"
                         }`}
                     >
