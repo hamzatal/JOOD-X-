@@ -61,3 +61,13 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 });
+// ====================================
+
+Route::prefix('medical-recipes')->group(function () {
+    Route::get('/', [MedicalRecipesController::class, 'index']);
+    Route::post('/generate', [MedicalRecipesController::class, 'generate']);
+    Route::get('/search', [MedicalRecipesController::class, 'search']);
+    Route::get('/conditions', [MedicalRecipesController::class, 'getConditions']);
+    Route::get('/nutrition-tips', [MedicalRecipesController::class, 'getNutritionTips']);
+    Route::post('/chatbot', [MedicalRecipesController::class, 'chatbot']);
+});
