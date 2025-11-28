@@ -14,7 +14,7 @@ import { useLang } from "@/context/LangContext";
 import axios from "axios";
 import RecipeModal from "./RecipeModal";
 
-export default function PopularRecipesSection() {
+export default function RandomRecipesSection() {
     const { lang } = useLang();
     const t = (ar, en) => (lang === "ar" ? ar : en);
 
@@ -24,7 +24,7 @@ export default function PopularRecipesSection() {
     const [selectedRecipe, setSelectedRecipe] = useState(null);
     const [showModal, setShowModal] = useState(false);
 
-    const fetchPopularRecipes = async (refresh = false) => {
+    const fetchRandomRecipes = async (refresh = false) => {
         if (refresh) {
             setRefreshing(true);
         } else {
@@ -33,11 +33,11 @@ export default function PopularRecipesSection() {
 
         try {
             const res = await axios.get(
-                `/api/popular-recipes?lang=${lang}&refresh=${
+                `/api/home-page/random?lang=${lang}&refresh=${
                     refresh ? "true" : "false"
                 }`
             );
-            console.log("Popular recipes fetched:", res.data);
+            console.log("Random recipes fetched:", res.data);
             setRecipes(res.data.recipes || []);
         } catch (error) {
             console.error("Error:", error);
@@ -48,7 +48,7 @@ export default function PopularRecipesSection() {
     };
 
     useEffect(() => {
-        fetchPopularRecipes();
+        fetchRandomRecipes();
     }, [lang]);
 
     const openModal = (recipe) => {
@@ -57,10 +57,9 @@ export default function PopularRecipesSection() {
     };
 
     const handleRefresh = () => {
-        fetchPopularRecipes(true);
+        fetchRandomRecipes(true);
     };
 
-    // دالة للحصول على النص المناسب
     const getLocalizedText = (recipe, field, arField) => {
         if (lang === "ar") {
             return recipe[arField] || recipe[field];
@@ -158,7 +157,7 @@ export default function PopularRecipesSection() {
 
                         return (
                             <motion.div
-                                key={`popular-${recipe.idMeal}-${idx}`}
+                                key={`random-${recipe.idMeal}-${idx}`}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}

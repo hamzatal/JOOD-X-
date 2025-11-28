@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class HomePageController extends Controller
 {
     /**
-     * جلب الوصفات الشهرية والتريند
+     * جلب الوصفات الشهرية والتريند (نفس منطق WhatToCookController)
      */
     public function getTrendingRecipes(Request $request)
     {
@@ -22,34 +22,34 @@ class HomePageController extends Controller
 
         Log::info("Trending recipes request", ['lang' => $lang, 'refresh' => $refresh]);
 
-        // إذا كان refresh=true، حذف الـ cache
         if ($refresh) {
             Cache::forget($cacheKey);
             Log::info("Cache cleared for: {$cacheKey}");
         }
 
         try {
-            // جلب من الـ cache (مدته ساعة)، أو إذا لم يكن موجوداً جلب من البيانات
+            // جلب من الـ cache أو من الـ API
             $recipes = Cache::remember($cacheKey, 3600, function () use ($lang) {
-                Log::info("Fetching trending recipes from API for language: {$lang}");
-                return $this->fetchArabicRecipes($lang);
+                Log::info("Fetching trending recipes from OpenAI for language: {$lang}");
+                return $this->fetchTrendingFromOpenAI($lang);
             });
 
             if (empty($recipes)) {
                 Log::warning("No recipes returned");
-                return response()->json(['recipes' => [], 'message' => 'No recipes available'], 200);
+                return response()->json(['recipes' => []], 200);
             }
+
+            // تحويل البيانات لصيغة المطلوبة (strMeal بدل title)
+            $recipes = $this->transformToMealFormat($recipes);
 
             Log::info("Successfully returned recipes", ['count' => count($recipes), 'lang' => $lang]);
             return response()->json(['recipes' => $recipes], 200);
         } catch (\Exception $e) {
             Log::error("Error fetching trending recipes: " . $e->getMessage(), [
                 'exception' => $e,
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
+                'line' => $e->getLine()
             ]);
 
-            // إرجاع وصفات افتراضية في حالة الفشل
             return response()->json([
                 'recipes' => $this->getFallbackRecipes($lang),
                 'error' => config('app.debug') ? $e->getMessage() : 'Failed to fetch recipes'
@@ -58,7 +58,7 @@ class HomePageController extends Controller
     }
 
     /**
-     * جلب الوصفات العشوائية
+     * جلب الوصفات العشوائية من TheMealDB (سريع)
      */
     public function getRandomRecipes(Request $request)
     {
@@ -76,7 +76,7 @@ class HomePageController extends Controller
         try {
             $recipes = Cache::remember($cacheKey, 1800, function () use ($lang) {
                 Log::info("Fetching random recipes from TheMealDB");
-                return $this->fetchRandomRecipesFromAPI($lang);
+                return $this->fetchRandomRecipesFromTheMealDB($lang);
             });
 
             return response()->json(['recipes' => $recipes], 200);
@@ -91,9 +91,9 @@ class HomePageController extends Controller
     }
 
     /**
-     * جلب الوصفات العربية من OpenAI
+     * جلب الوصفات الشهرية من OpenAI (نفس منطق WhatToCookController)
      */
-    private function fetchArabicRecipes($lang)
+    private function fetchTrendingFromOpenAI($lang)
     {
         $openaiKey = env('OPENAI_API_KEY');
 
@@ -102,16 +102,19 @@ class HomePageController extends Controller
             throw new \Exception("OpenAI API Key not configured");
         }
 
+        // للعربية: وصفات عربية أصيلة وشهيرة
+        // للإنجليزية: وصفات عالمية
         $prompt = $lang === 'ar'
-            ? "أعطني 10 وصفات عربية أصيلة شهيرة وتريند حالياً (مثل: المقلوبة، المنسف، الكبسة، المندي، الملوخية، الفتة، الكبة، الشاورما، الفلافل، الحمص). أعِد JSON فقط بدون أي markdown أو نص إضافي. الصيغة: [
-            {\"idMeal\":\"1\",\"strMeal\":\"اسم الوصفة بالعربي\",\"strMealAr\":\"اسم الوصفة بالعربي\",\"strCategory\":\"نوع الطبخ\",\"strCategoryAr\":\"نوع الطبخ\",\"strArea\":\"المنطقة\",\"strAreaAr\":\"المنطقة\",\"strInstructions\":\"خطوات التحضير بالعربي\",\"strInstructionsAr\":\"خطوات التحضير بالعربي\",\"strMealThumb\":\"https://www.themealdb.com/images/media/meals/123.jpg\",\"ingredients\":[\"مكون 1\",\"مكون 2\"]}
+            ? "أعطني 10 وصفات عربية أصيلة وشهيرة وتريند حالياً (مثل: المقلوبة، المنسف، الكبسة، المندي، الملوخية، الفتة، الكبة، الشاورما، الفلافل، الحمص). 
+            أعِد JSON فقط بهذا الشكل بدون أي markdown: [
+            {\"strMeal\":\"اسم الوصفة بالعربي\",\"strCategory\":\"نوع الطبخ\",\"strArea\":\"المنطقة\",\"strInstructions\":\"خطوات التحضير بالعربي مفصلة وواضحة\",\"ingredients\":[\"مكون 1\",\"مكون 2\"],\"prepTime\":\"15\",\"cookTime\":\"30\",\"calories\":\"400\",\"protein\":\"20g\",\"image_query\":\"اسم الطبق بالإنجليزي للبحث الدقيق عن الصورة\"}
             ]"
-            : "Give me 10 popular trending international recipes. Return ONLY valid JSON (no markdown, no extra text). Format: [
-            {\"idMeal\":\"1\",\"strMeal\":\"Recipe name\",\"strCategory\":\"Category\",\"strArea\":\"Country\",\"strInstructions\":\"Cooking instructions\",\"strMealThumb\":\"https://www.themealdb.com/images/media/meals/123.jpg\",\"ingredients\":[\"ing 1\",\"ing 2\"]}
+            : "Give me 10 popular trending international recipes. Return ONLY JSON (no markdown): [
+            {\"strMeal\":\"Recipe name\",\"strCategory\":\"Category\",\"strArea\":\"Country\",\"strInstructions\":\"Detailed cooking instructions\",\"ingredients\":[\"ing 1\",\"ing 2\"],\"prepTime\":\"15\",\"cookTime\":\"30\",\"calories\":\"400\",\"protein\":\"20g\",\"image_query\":\"dish name in English for accurate image search\"}
             ]";
 
         try {
-            Log::info("Calling OpenAI API for language: {$lang}");
+            Log::info("Calling OpenAI for trending recipes in language: {$lang}");
 
             $response = Http::timeout(30)
                 ->retry(2, 1000)
@@ -121,7 +124,7 @@ class HomePageController extends Controller
                     'messages' => [
                         [
                             'role' => 'system',
-                            'content' => 'You are a professional chef expert. Return ONLY valid JSON array format. No markdown code blocks, no extra text, no explanations.'
+                            'content' => 'You are a professional chef. Return ONLY valid JSON array. No markdown, no extra text. Respect the cuisine type requested by the user.'
                         ],
                         [
                             'role' => 'user',
@@ -129,7 +132,7 @@ class HomePageController extends Controller
                         ]
                     ],
                     'max_tokens' => 2000,
-                    'temperature' => 0.7
+                    'temperature' => 0.75
                 ]);
 
             Log::info("OpenAI response status: " . $response->status());
@@ -137,7 +140,7 @@ class HomePageController extends Controller
             if ($response->failed()) {
                 Log::error("OpenAI API failed", [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => substr($response->body(), 0, 300)
                 ]);
                 throw new \Exception("OpenAI API error: " . $response->status());
             }
@@ -151,7 +154,7 @@ class HomePageController extends Controller
 
             Log::info("Raw OpenAI response length: " . strlen($content));
 
-            $recipes = $this->parseJSON($content);
+            $recipes = $this->extractJson($content);
 
             if (empty($recipes)) {
                 Log::warning("No recipes parsed from OpenAI response");
@@ -160,13 +163,16 @@ class HomePageController extends Controller
 
             Log::info("Successfully parsed recipes count: " . count($recipes));
 
-            // جلب الصور
+            // جلب الصور (نفس منطق WhatToCookController)
             foreach ($recipes as &$recipe) {
-                if (empty($recipe['strMealThumb'])) {
-                    $query = $recipe['strMeal'] ?? 'food';
-                    $recipe['strMealThumb'] = $this->fetchRecipeImage($query);
-                }
+                $imageQuery = $recipe['image_query'] ?? $recipe['strMeal'] ?? 'food';
+                $cleanQuery = $this->prepareImageQuery($imageQuery, 'all');
 
+                Log::info("Fetching image", ["query" => $cleanQuery]);
+
+                $recipe['strMealThumb'] = $this->fetchBestImage($cleanQuery);
+
+                // Set default idMeal
                 if (empty($recipe['idMeal'])) {
                     $recipe['idMeal'] = uniqid();
                 }
@@ -174,15 +180,15 @@ class HomePageController extends Controller
 
             return $recipes;
         } catch (\Exception $e) {
-            Log::error("Error in fetchArabicRecipes: " . $e->getMessage());
+            Log::error("Error in fetchTrendingFromOpenAI: " . $e->getMessage());
             throw $e;
         }
     }
 
     /**
-     * جلب وصفات عشوائية من TheMealDB (سريع جداً)
+     * جلب وصفات عشوائية من TheMealDB
      */
-    private function fetchRandomRecipesFromAPI($lang)
+    private function fetchRandomRecipesFromTheMealDB($lang)
     {
         $randomRecipes = [];
 
@@ -198,7 +204,7 @@ class HomePageController extends Controller
                         $meal = $response->json('meals.0');
 
                         if ($meal) {
-                            // إذا كانت اللغة عربية، أضف ترجمات
+                            // إذا كانت اللغة عربية، أضف تسميات عربية
                             if ($lang === 'ar') {
                                 $meal['strMealAr'] = $meal['strMeal'] ?? '';
                                 $meal['strCategoryAr'] = $meal['strCategory'] ?? '';
@@ -223,71 +229,159 @@ class HomePageController extends Controller
             Log::info("Successfully fetched " . count($randomRecipes) . " random recipes");
             return $randomRecipes;
         } catch (\Exception $e) {
-            Log::error("Error in fetchRandomRecipesFromAPI: " . $e->getMessage());
+            Log::error("Error in fetchRandomRecipesFromTheMealDB: " . $e->getMessage());
             return $this->getFallbackRecipes($lang);
         }
     }
 
     /**
-     * جلب صورة الطبق
+     * تحويل الوصفات من صيغة OpenAI إلى صيغة TheMealDB
      */
-    private function fetchRecipeImage($query)
+    private function transformToMealFormat($recipes)
     {
-        try {
-            $cacheKey = "image_" . md5($query);
-
-            return Cache::remember($cacheKey, 86400, function () use ($query) {
-                // جرب Pexels أولاً (سريع وموثوق)
-                $image = $this->getPexelsImage($query);
-                if ($image) return $image;
-
-                // ثم Unsplash
-                $image = $this->getUnsplashImage($query);
-                if ($image) return $image;
-
-                // صورة افتراضية
-                return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop';
-            });
-        } catch (\Exception $e) {
-            Log::warning("Error fetching image for: {$query}");
-            return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop';
-        }
+        return array_map(function ($recipe) {
+            return [
+                'idMeal' => $recipe['idMeal'] ?? uniqid(),
+                'strMeal' => $recipe['strMeal'] ?? $recipe['title'] ?? 'Recipe',
+                'strMealAr' => $recipe['strMeal'] ?? $recipe['title'] ?? 'Recipe',
+                'strCategory' => $recipe['strCategory'] ?? 'General',
+                'strCategoryAr' => $recipe['strCategory'] ?? 'عام',
+                'strArea' => $recipe['strArea'] ?? 'General',
+                'strAreaAr' => $recipe['strArea'] ?? 'عام',
+                'strInstructions' => $recipe['strInstructions'] ?? $recipe['instructions'] ?? '',
+                'strInstructionsAr' => $recipe['strInstructions'] ?? $recipe['instructions'] ?? '',
+                'strMealThumb' => $recipe['strMealThumb'] ?? $recipe['image'] ?? '',
+                'ingredients' => $recipe['ingredients'] ?? [],
+                'prepTime' => $recipe['prepTime'] ?? '15',
+                'cookTime' => $recipe['cookTime'] ?? '30',
+                'calories' => $recipe['calories'] ?? '400',
+                'protein' => $recipe['protein'] ?? '20g'
+            ];
+        }, $recipes);
     }
 
-    private function getPexelsImage($query)
+    /**
+     * جلب أفضل صورة من 3 APIs (نفس منطق WhatToCookController)
+     */
+    private function fetchBestImage($query)
     {
-        $key = env('PEXELS_API_KEY');
+        // جرب Spoonacular أولاً (متخصص في الطعام)
+        $img = $this->fetchFromSpoonacular($query);
+        if ($img) {
+            Log::info("Image from Spoonacular");
+            return $img;
+        }
+
+        // ثم Pexels
+        $img = $this->fetchFromPexels($query);
+        if ($img) {
+            Log::info("Image from Pexels");
+            return $img;
+        }
+
+        // ثم Unsplash
+        $img = $this->fetchFromUnsplash($query);
+        if ($img) {
+            Log::info("Image from Unsplash");
+            return $img;
+        }
+
+        Log::warning("Using fallback image for: " . $query);
+        return "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop";
+    }
+
+    /**
+     * Spoonacular - متخصص في صور الطعام
+     */
+    private function fetchFromSpoonacular($query)
+    {
+        $key = env("SPOONACULAR_API_KEY");
         if (!$key) return null;
 
         try {
-            $response = Http::timeout(5)
-                ->withHeaders(['Authorization' => $key])
-                ->get('https://api.pexels.com/v1/search', [
-                    'query' => $query,
-                    'per_page' => 1
+            $cacheKey = "spoon_" . md5($query);
+
+            return Cache::remember($cacheKey, 86400, function () use ($key, $query) {
+                $res = Http::timeout(8)->get("https://api.spoonacular.com/recipes/complexSearch", [
+                    "apiKey" => $key,
+                    "query" => $query,
+                    "number" => 3,
+                    "addRecipeInformation" => true,
                 ]);
 
-            return $response->json('photos.0.src.large') ?? null;
+                if ($res->failed()) return null;
+
+                $results = $res->json("results");
+                if (!$results || empty($results)) return null;
+
+                return $results[0]["image"] ?? null;
+            });
+        } catch (\Exception $e) {
+            Log::warning("Spoonacular error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Pexels - صور عالية الجودة
+     */
+    private function fetchFromPexels($query)
+    {
+        $key = env("PEXELS_API_KEY");
+        if (!$key) return null;
+
+        try {
+            $cacheKey = "pexels_" . md5($query);
+
+            return Cache::remember($cacheKey, 86400, function () use ($key, $query) {
+                $res = Http::timeout(5)
+                    ->withHeaders(["Authorization" => $key])
+                    ->get("https://api.pexels.com/v1/search", [
+                        "query" => $query,
+                        "per_page" => 1,
+                        "orientation" => "landscape"
+                    ]);
+
+                if ($res->failed()) return null;
+
+                $photos = $res->json("photos");
+                if (!$photos || empty($photos)) return null;
+
+                return $photos[0]["src"]["large"] ?? null;
+            });
         } catch (\Exception $e) {
             Log::warning("Pexels error: " . $e->getMessage());
             return null;
         }
     }
 
-    private function getUnsplashImage($query)
+    /**
+     * Unsplash - احتياطي
+     */
+    private function fetchFromUnsplash($query)
     {
-        $key = env('UNSPLASH_ACCESS_KEY');
+        $key = env("UNSPLASH_ACCESS_KEY");
         if (!$key) return null;
 
         try {
-            $response = Http::timeout(5)
-                ->get('https://api.unsplash.com/search/photos', [
-                    'query' => $query,
-                    'client_id' => $key,
-                    'per_page' => 1
-                ]);
+            $cacheKey = "unsplash_" . md5($query);
 
-            return $response->json('results.0.urls.regular') ?? null;
+            return Cache::remember($cacheKey, 86400, function () use ($key, $query) {
+                $res = Http::timeout(5)
+                    ->get("https://api.unsplash.com/search/photos", [
+                        "query" => $query,
+                        "client_id" => $key,
+                        "per_page" => 1,
+                        "orientation" => "landscape"
+                    ]);
+
+                if ($res->failed()) return null;
+
+                $results = $res->json("results");
+                if (!$results || empty($results)) return null;
+
+                return $results[0]["urls"]["regular"] ?? null;
+            });
         } catch (\Exception $e) {
             Log::warning("Unsplash error: " . $e->getMessage());
             return null;
@@ -295,24 +389,43 @@ class HomePageController extends Controller
     }
 
     /**
-     * Parse JSON من نص قد يحتوي على markdown
+     * تنظيف وتحضير query البحث عن الصورة
      */
-    private function parseJSON($text)
+    private function prepareImageQuery($query, $cuisine)
+    {
+        // إزالة الأحرف العربية
+        $query = preg_replace('/[\x{0600}-\x{06FF}]/u', '', $query);
+        $query = trim($query);
+
+        // تنظيف الـ query
+        $cleanQuery = strtolower($query);
+        $cleanQuery = preg_replace('/[^a-z0-9\s]/', '', $cleanQuery);
+        $cleanQuery = trim($cleanQuery);
+
+        return !empty($cleanQuery) ? $cleanQuery : "food dish";
+    }
+
+    /**
+     * استخراج JSON من نص قد يحتوي على markdown
+     * (نفس الدالة من WhatToCookController)
+     */
+    private function extractJson($text)
     {
         // إزالة markdown code blocks
-        $text = preg_replace('/``````/i', '', $text);
-        $text = preg_replace('/``````/i', '', $text);
+        $backtick = chr(96); // backtick character
+        $text = str_replace($backtick . $backtick . $backtick . "json", "", $text);
+        $text = str_replace($backtick . $backtick . $backtick, "", $text);
         $text = trim($text);
 
-        // حاول decode مباشرة
+        // محاولة decode مباشرة
         $decoded = json_decode($text, true);
         if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
             return $decoded;
         }
 
-        // حاول استخراج array من النص
-        if (preg_match('/\[[\s\S]*\]/s', $text, $matches)) {
-            $decoded = json_decode($matches[0], true);
+        // محاولة استخراج array من النص
+        if (preg_match('/\[[\s\S]*\]/s', $text, $m)) {
+            $decoded = json_decode($m[0], true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 return $decoded;
             }
@@ -323,7 +436,7 @@ class HomePageController extends Controller
     }
 
     /**
-     * وصفات افتراضية (backup) من TheMealDB
+     * وصفات احتياطية من TheMealDB
      */
     private function getFallbackRecipes($lang)
     {

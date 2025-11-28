@@ -62,6 +62,7 @@ export default function WhatToCookPage() {
         try {
             const res = await axios.post(
                 "/api/what-to-cook",
+
                 {
                     lang,
                     ingredients,

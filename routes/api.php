@@ -7,51 +7,40 @@ use App\Http\Controllers\Api\WhatToCookController;
 use App\Http\Controllers\Api\MedicalRecipesController;
 use App\Http\Controllers\Api\PopularRecipesController;
 
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application.
+|
+*/
+
+// ============================================================================
+// HOME & TRENDING RECIPES
+// ============================================================================
+
+Route::prefix('home-page')->group(function () {
+    Route::get('/', [HomePageController::class, 'getTrendingRecipes']);
+    Route::get('/trending', [HomePageController::class, 'getTrendingRecipes']);
+    Route::get('/random', [HomePageController::class, 'getRandomRecipes']);
+});
+
+// ============================================================================
+// WHAT TO COOK - AI Recipe Generator & Chat
+// ============================================================================
+
 Route::prefix('what-to-cook')->group(function () {
     Route::get('/', [WhatToCookController::class, 'index']);
     Route::post('/generate', [WhatToCookController::class, 'generate']);
 });
 
-// ====================================
-// Trending sections
-// ====================================
-
-// Hero trending
-Route::get('/home-page', [HomePageController::class, 'index']);
-Route::get('/popular-recipes', [PopularRecipesController::class, 'index']);
-Route::prefix('home-page')->group(function () {
-    Route::get('/', [HomePageController::class, 'getTrendingRecipes']); // للتوافق مع الكود القديم
-    Route::get('/trending', [HomePageController::class, 'getTrendingRecipes']);
-    Route::get('/random', [HomePageController::class, 'getRandomRecipes']);
-});
-
-Route::get('/random-recipes', [HomePageController::class, 'getRandomRecipes']); // للتوافق
-
-// ====================================
-// What-To-Cook — Chat + Single AI Recipe Generator
-// ====================================
 Route::post('/what-to-cook', [WhatToCookController::class, 'generate']);
 
-
-// ====================================
-// Medical Recipes (AI powered)
-// NOTE: these are API endpoints ONLY
-// ====================================
-Route::get('/medical-recipes', [MedicalRecipesController::class, 'index']);
-Route::post('/medical-recipes/generate', [MedicalRecipesController::class, 'generate']);
-Route::get('/medical-recipes', [MedicalRecipesController::class, 'index']);
-Route::post('/medical-recipes/generate', [MedicalRecipesController::class, 'generate']);
-// ====================================
-// Authenticated API (Sanctum)
-// ====================================
-Route::middleware('auth:sanctum')->group(function () {
-
-    // Get authenticated user info
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-});
-// ====================================
+// ============================================================================
+// MEDICAL RECIPES - AI Powered Health-Based Recipes
+// ============================================================================
 
 Route::prefix('medical-recipes')->group(function () {
     Route::get('/', [MedicalRecipesController::class, 'index']);
@@ -60,4 +49,14 @@ Route::prefix('medical-recipes')->group(function () {
     Route::get('/conditions', [MedicalRecipesController::class, 'getConditions']);
     Route::get('/nutrition-tips', [MedicalRecipesController::class, 'getNutritionTips']);
     Route::post('/chatbot', [MedicalRecipesController::class, 'chatbot']);
+});
+
+// ============================================================================
+// AUTHENTICATED ROUTES - Sanctum Protected
+// ============================================================================
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 });
