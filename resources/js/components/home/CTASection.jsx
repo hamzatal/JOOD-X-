@@ -17,10 +17,10 @@ export default function CTASection() {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 rounded-3xl p-12 md:p-16 text-center"
+                    className="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 rounded-3xl p-8 md:p-12 lg:p-16"
                 >
                     {/* Background decoration */}
-                    <div className="absolute inset-0 overflow-hidden opacity-20">
+                    <div className="absolute inset-0 overflow-hidden opacity-10">
                         <motion.div
                             animate={{ rotate: 360 }}
                             transition={{
@@ -30,7 +30,7 @@ export default function CTASection() {
                             }}
                             className="absolute -top-20 -left-20"
                         >
-                            <ChefHat size={200} />
+                            <ChefHat size={150} />
                         </motion.div>
                         <motion.div
                             animate={{ rotate: -360 }}
@@ -41,13 +41,18 @@ export default function CTASection() {
                             }}
                             className="absolute -bottom-20 -right-20"
                         >
-                            <Sparkles size={180} />
+                            <Sparkles size={130} />
                         </motion.div>
                     </div>
 
-                    <div className="relative z-10">
+                    {/* Content */}
+                    <div
+                        className={`relative z-10 ${
+                            lang === "ar" ? "text-center" : "text-center"
+                        }`}
+                    >
                         <motion.div
-                            animate={{ scale: [1, 1.1, 1] }}
+                            animate={{ scale: [1, 1.05, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                             className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-semibold mb-6"
                         >
@@ -55,17 +60,17 @@ export default function CTASection() {
                             {t("ابدأ رحلتك الآن", "Start Your Journey Now")}
                         </motion.div>
 
-                        <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+                        <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
                             {t(
                                 "جاهز لاكتشاف وصفات جديدة؟",
                                 "Ready to Discover New Recipes?"
                             )}
                         </h2>
 
-                        <p className="text-lg md:text-xl text-green-50 max-w-2xl mx-auto mb-8">
+                        <p className="text-base md:text-lg lg:text-xl text-green-50 max-w-2xl mx-auto mb-8 leading-relaxed">
                             {t(
-                                "انضم إلى آلاف المستخدمين واستمتع بتجربة طبخ فريدة مع وصفات مخصصة لك",
-                                "Join thousands of users and enjoy a unique cooking experience with personalized recipes"
+                                "انضم إلى آلاف المستخدمين واستمتع بتجربة طبخ فريدة مع وصفات حلال مخصصة لك",
+                                "Join thousands of users and enjoy a unique cooking experience with personalized halal recipes"
                             )}
                         </p>
 
@@ -74,7 +79,9 @@ export default function CTASection() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => handleNavigate("/what-to-cook")}
-                                className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-green-600 rounded-xl font-bold text-lg hover:shadow-2xl transition-all"
+                                className={`group inline-flex items-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-white text-green-600 rounded-xl font-bold text-base md:text-lg hover:shadow-2xl transition-all w-full sm:w-auto justify-center ${
+                                    lang === "ar" ? "flex-row-reverse" : ""
+                                }`}
                             >
                                 {t("اقترح لي وصفة", "Suggest Me a Recipe")}
                                 <ArrowRight
@@ -90,7 +97,9 @@ export default function CTASection() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => handleNavigate("/recipes")}
-                                className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/10 transition-all"
+                                className={`inline-flex items-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-transparent border-2 border-white text-white rounded-xl font-bold text-base md:text-lg hover:bg-white/10 transition-all w-full sm:w-auto justify-center ${
+                                    lang === "ar" ? "flex-row-reverse" : ""
+                                }`}
                             >
                                 {t("تصفح الوصفات", "Browse Recipes")}
                             </motion.button>
