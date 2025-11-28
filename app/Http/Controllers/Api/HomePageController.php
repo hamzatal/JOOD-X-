@@ -10,9 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class HomePageController extends Controller
 {
-    /**
-     * جلب الوصفات الشهرية والتريند (نفس منطق WhatToCookController)
-     */
+
     public function getTrendingRecipes(Request $request)
     {
         $lang = $request->query('lang', 'en');
@@ -28,7 +26,6 @@ class HomePageController extends Controller
         }
 
         try {
-            // جلب من الـ cache أو من الـ API
             $recipes = Cache::remember($cacheKey, 3600, function () use ($lang) {
                 Log::info("Fetching trending recipes from OpenAI for language: {$lang}");
                 return $this->fetchTrendingFromOpenAI($lang);
@@ -57,9 +54,6 @@ class HomePageController extends Controller
         }
     }
 
-    /**
-     * جلب الوصفات العشوائية من TheMealDB (سريع)
-     */
     public function getRandomRecipes(Request $request)
     {
         $lang = $request->query('lang', 'en');
@@ -90,9 +84,7 @@ class HomePageController extends Controller
         }
     }
 
-    /**
-     * جلب الوصفات الشهرية من OpenAI (نفس منطق WhatToCookController)
-     */
+
     private function fetchTrendingFromOpenAI($lang)
     {
         $openaiKey = env('OPENAI_API_KEY');
@@ -102,8 +94,6 @@ class HomePageController extends Controller
             throw new \Exception("OpenAI API Key not configured");
         }
 
-        // للعربية: وصفات عربية أصيلة وشهيرة
-        // للإنجليزية: وصفات عالمية
         $prompt = $lang === 'ar'
             ? "أعطني 10 وصفات عربية أصيلة وشهيرة وتريند حالياً (مثل: المقلوبة، المنسف، الكبسة، المندي، الملوخية، الفتة، الكبة، الشاورما، الفلافل، الحمص). 
             أعِد JSON فقط بهذا الشكل بدون أي markdown: [
@@ -163,7 +153,6 @@ class HomePageController extends Controller
 
             Log::info("Successfully parsed recipes count: " . count($recipes));
 
-            // جلب الصور (نفس منطق WhatToCookController)
             foreach ($recipes as &$recipe) {
                 $imageQuery = $recipe['image_query'] ?? $recipe['strMeal'] ?? 'food';
                 $cleanQuery = $this->prepareImageQuery($imageQuery, 'all');
@@ -172,7 +161,6 @@ class HomePageController extends Controller
 
                 $recipe['strMealThumb'] = $this->fetchBestImage($cleanQuery);
 
-                // Set default idMeal
                 if (empty($recipe['idMeal'])) {
                     $recipe['idMeal'] = uniqid();
                 }
@@ -185,9 +173,7 @@ class HomePageController extends Controller
         }
     }
 
-    /**
-     * جلب وصفات عشوائية من TheMealDB
-     */
+
     private function fetchRandomRecipesFromTheMealDB($lang)
     {
         $randomRecipes = [];
