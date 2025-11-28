@@ -2,13 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Api\AiRecipesController;
 use App\Http\Controllers\Api\HeroTrendController;
-use App\Http\Controllers\Api\TrendingRecipesController;
 use App\Http\Controllers\Api\WhatToCookController;
 use App\Http\Controllers\Api\MedicalRecipesController;
-use App\Http\Controllers\Api\HealthAssistantController;
+use App\Http\Controllers\Api\PopularRecipesController;
 
 Route::prefix('what-to-cook')->group(function () {
     Route::get('/', [WhatToCookController::class, 'index']);
@@ -21,18 +18,8 @@ Route::prefix('what-to-cook')->group(function () {
 
 // Hero trending
 Route::get('/hero-trending', [HeroTrendController::class, 'index']);
-
-// Spoonacular trending recipes
-Route::get('/trending-recipes', [TrendingRecipesController::class, 'index']);
-
-
-// ====================================
-// AI Recipes Grid
-// (Daily auto + manual generate)
-// ====================================
-Route::get('/ai-recipes',        [AiRecipesController::class, 'index']);
-Route::post('/ai-recipes/generate', [AiRecipesController::class, 'generate']);
-
+Route::get('/hero-trending', [HeroTrendController::class, 'index']);
+Route::get('/popular-recipes', [PopularRecipesController::class, 'index']);
 
 // ====================================
 // What-To-Cook — Chat + Single AI Recipe Generator
@@ -46,16 +33,8 @@ Route::post('/what-to-cook', [WhatToCookController::class, 'generate']);
 // ====================================
 Route::get('/medical-recipes', [MedicalRecipesController::class, 'index']);
 Route::post('/medical-recipes/generate', [MedicalRecipesController::class, 'generate']);
-Route::get('/medical-recipes', [MedicalRecipesController::class, 'index']);               // returns cached daily recipes (or empty)
-Route::post('/medical-recipes/generate', [MedicalRecipesController::class, 'generate']); // generate new medical recipes (accepts lang, condition, constraints)
-
-
-// ====================================
-// Health Assistant AI Chat
-// ====================================
-Route::post('/health-assistant', [HealthAssistantController::class, 'handle']);
-
-
+Route::get('/medical-recipes', [MedicalRecipesController::class, 'index']);
+Route::post('/medical-recipes/generate', [MedicalRecipesController::class, 'generate']);
 // ====================================
 // Authenticated API (Sanctum)
 // ====================================

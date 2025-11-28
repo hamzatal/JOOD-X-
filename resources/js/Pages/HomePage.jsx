@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import HeroTrendSection from "@/components/HeroTrendSection";
-// import AIRecipesSection from "@/components/AIRecipesSection";
+import HeroTrendSection from "@/components/home/HeroTrendSection";
+import CategoriesSection from "@/components/home/CategoriesSection";
+import FeaturesSection from "@/components/home/FeaturesSection";
+import PopularRecipesSection from "@/components/home/PopularRecipesSection";
+import StatsSection from "@/components/home/StatsSection";
+import CTASection from "@/components/home/CTASection";
 import Footer from "@/components/Footer";
 import { useLang } from "@/context/LangContext";
-
-import WasteAwareness from "@/components/home/WasteAwareness";
-import DonationOrgsSection from "@/components/home/DonationOrgsSection";
-import HealthAwarenessSection from "@/components/home/HealthAwarenessSection";
 
 export default function Home() {
     const { lang } = useLang();
@@ -17,14 +17,14 @@ export default function Home() {
     }, [lang]);
 
     return (
-        <div className="min-h-screen bg-black text-gray-200">
+        <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-black text-gray-200">
             <Navbar />
             <HeroTrendSection />
-            {/* <AIRecipesSection /> */}
-            <WasteAwareness />
-            <DonationOrgsSection />
-            <HealthAwarenessSection />
-
+            <CategoriesSection />
+            <PopularRecipesSection />
+            <FeaturesSection />
+            <StatsSection />
+            <CTASection />
             <Footer />
         </div>
     );
