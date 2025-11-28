@@ -37,7 +37,6 @@ export default function RandomRecipesSection() {
                     refresh ? "true" : "false"
                 }`
             );
-            console.log("Random recipes fetched:", res.data);
             setRecipes(res.data.recipes || []);
         } catch (error) {
             console.error("Error:", error);

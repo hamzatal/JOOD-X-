@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\HomePageController;
 use App\Http\Controllers\Api\WhatToCookController;
 use App\Http\Controllers\Api\MedicalRecipesController;
-use App\Http\Controllers\Api\PopularRecipesController;
 
 
 /*

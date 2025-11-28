@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 
-class PopularRecipesController extends Controller
+class RandomRecipesController extends Controller
 {
     public function index(Request $request)
     {
@@ -15,7 +15,7 @@ class PopularRecipesController extends Controller
             $lang = $request->get('lang', 'en');
             $refresh = $request->get('refresh', 'false');
 
-            $cacheKey = "popular_meals_{$lang}";
+            $cacheKey = "random_meals_{$lang}";
 
             if ($refresh === 'true') {
                 Cache::forget($cacheKey);
