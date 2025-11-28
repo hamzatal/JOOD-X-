@@ -19,6 +19,13 @@ Route::prefix('what-to-cook')->group(function () {
 // Hero trending
 Route::get('/home-page', [HomePageController::class, 'index']);
 Route::get('/popular-recipes', [PopularRecipesController::class, 'index']);
+Route::prefix('home-page')->group(function () {
+    Route::get('/', [HomePageController::class, 'getTrendingRecipes']); // للتوافق مع الكود القديم
+    Route::get('/trending', [HomePageController::class, 'getTrendingRecipes']);
+    Route::get('/random', [HomePageController::class, 'getRandomRecipes']);
+});
+
+Route::get('/random-recipes', [HomePageController::class, 'getRandomRecipes']); // للتوافق
 
 // ====================================
 // What-To-Cook — Chat + Single AI Recipe Generator

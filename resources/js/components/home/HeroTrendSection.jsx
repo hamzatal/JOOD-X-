@@ -198,7 +198,7 @@ export default function HeroTrendSection() {
                                             }`}
                                         />
                                         <span className="text-xs font-semibold text-white">
-                                            {t("تحديث", "Refresh")}
+                                            {t("وصفات جديدة !", "New Recipes!")}
                                         </span>
                                     </motion.button>
                                 </div>
