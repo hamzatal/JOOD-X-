@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 
-class HeroTrendController extends Controller
+class HomePageController extends Controller
 {
     private $forbiddenIngredients = [
         'pork',

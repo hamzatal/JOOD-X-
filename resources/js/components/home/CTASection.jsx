@@ -11,39 +11,14 @@ export default function CTASection() {
     };
 
     return (
-        <section className="py-20 px-4 md:px-8 bg-gradient-to-b from-gray-900 to-black">
-            <div className="max-w-5xl mx-auto">
+        <section className="py-5 px-4 md:px-8 bg-gradient-to-b from-gray-900 to-black">
+            <div className="max-w-6xl mx-auto">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 rounded-3xl p-8 md:p-12 lg:p-16"
+                    className="relative overflow-hidden bg-gradient-to-r from-amber-600 via-amber-600 to-amber-600 rounded-3xl p-8 md:p-12 lg:p-16"
                 >
-                    {/* Background decoration */}
-                    <div className="absolute inset-0 overflow-hidden opacity-10">
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{
-                                duration: 20,
-                                repeat: Infinity,
-                                ease: "linear",
-                            }}
-                            className="absolute -top-20 -left-20"
-                        >
-                            <ChefHat size={150} />
-                        </motion.div>
-                        <motion.div
-                            animate={{ rotate: -360 }}
-                            transition={{
-                                duration: 25,
-                                repeat: Infinity,
-                                ease: "linear",
-                            }}
-                            className="absolute -bottom-20 -right-20"
-                        >
-                            <Sparkles size={130} />
-                        </motion.div>
-                    </div>
 
                     {/* Content */}
                     <div
@@ -51,15 +26,7 @@ export default function CTASection() {
                             lang === "ar" ? "text-center" : "text-center"
                         }`}
                     >
-                        <motion.div
-                            animate={{ scale: [1, 1.05, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-semibold mb-6"
-                        >
-                            <Sparkles className="w-4 h-4" />
-                            {t("ابدأ رحلتك الآن", "Start Your Journey Now")}
-                        </motion.div>
-
+                      
                         <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
                             {t(
                                 "جاهز لاكتشاف وصفات جديدة؟",
@@ -69,7 +36,7 @@ export default function CTASection() {
 
                         <p className="text-base md:text-lg lg:text-xl text-green-50 max-w-2xl mx-auto mb-8 leading-relaxed">
                             {t(
-                                "انضم إلى آلاف المستخدمين واستمتع بتجربة طبخ فريدة مع وصفات حلال مخصصة لك",
+                                "استمتع بتجربة طبخ فريدة مع وصفات  مخصصة لك",
                                 "Join thousands of users and enjoy a unique cooking experience with personalized halal recipes"
                             )}
                         </p>

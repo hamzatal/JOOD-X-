@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import HeroTrendSection from "@/components/home/HeroTrendSection";
 import CategoriesSection from "@/components/home/CategoriesSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
-import PopularRecipesSection from "@/components/home/PopularRecipesSection";
+import PopularRecipesSection from "@/components/home/RandomRecipesSection";
 import StatsSection from "@/components/home/StatsSection";
 import CTASection from "@/components/home/CTASection";
 import Footer from "@/components/Footer";

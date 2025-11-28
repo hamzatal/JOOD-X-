@@ -37,7 +37,7 @@ export default function HeroTrendSection() {
 
         try {
             const res = await axios.get(
-                `/api/hero-trending?lang=${lang}&refresh=${
+                `/api/home-page?lang=${lang}&refresh=${
                     refresh ? "true" : "false"
                 }`
             );

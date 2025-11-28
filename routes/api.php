@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\HeroTrendController;
+use App\Http\Controllers\Api\HomePageController;
 use App\Http\Controllers\Api\WhatToCookController;
 use App\Http\Controllers\Api\MedicalRecipesController;
 use App\Http\Controllers\Api\PopularRecipesController;
@@ -17,8 +17,7 @@ Route::prefix('what-to-cook')->group(function () {
 // ====================================
 
 // Hero trending
-Route::get('/hero-trending', [HeroTrendController::class, 'index']);
-Route::get('/hero-trending', [HeroTrendController::class, 'index']);
+Route::get('/home-page', [HomePageController::class, 'index']);
 Route::get('/popular-recipes', [PopularRecipesController::class, 'index']);
 
 // ====================================
