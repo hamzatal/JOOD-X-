@@ -6,7 +6,7 @@ export default function IngredientsInput({
 }) {
     return (
         <div>
-            <label className="text-lg font-semibold mb-3 block flex items-center gap-2">
+            <label className="text-lg font-semibold mb-3 block items-center gap-2">
                 <span className="text-2xl">🥘</span>
                 {t("المكونات المتوفرة:", "Available ingredients:")}
             </label>
