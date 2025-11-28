@@ -5,7 +5,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-
 // ==============================
 // Home page
 // ==============================
@@ -22,7 +21,7 @@ Route::get('/', function () {
 // What to cook page (Inertia)
 // ==============================
 Route::get('/what-to-cook', function () {
-    return Inertia::render('WhatToCook');
+    return Inertia::render('WhatToCookPage');
 })->name('what-to-cook');
 
 // ==============================

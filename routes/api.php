@@ -10,6 +10,11 @@ use App\Http\Controllers\Api\WhatToCookController;
 use App\Http\Controllers\Api\MedicalRecipesController;
 use App\Http\Controllers\Api\HealthAssistantController;
 
+Route::prefix('what-to-cook')->group(function () {
+    Route::get('/', [WhatToCookController::class, 'index']);
+    Route::post('/generate', [WhatToCookController::class, 'generate']);
+});
+
 // ====================================
 // Trending sections
 // ====================================
@@ -32,7 +37,7 @@ Route::post('/ai-recipes/generate', [AiRecipesController::class, 'generate']);
 // ====================================
 // What-To-Cook — Chat + Single AI Recipe Generator
 // ====================================
-Route::post('/what-to-cook', [WhatToCookController::class, 'handle']);
+Route::post('/what-to-cook', [WhatToCookController::class, 'generate']);
 
 
 // ====================================

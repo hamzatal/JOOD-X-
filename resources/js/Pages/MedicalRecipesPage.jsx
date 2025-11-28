@@ -35,13 +35,16 @@ export default function MedicalRecipesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState(null);
     const [generationProgress, setGenerationProgress] = useState(0);
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
     const recipesRef = useRef(null);
 
+    // تحميل الحالات والنصائح
     useEffect(() => {
         loadConditions();
         loadNutritionTips();
     }, [selectedCondition, lang]);
 
+    // تحميل الوصفات المحفوظة فقط (بدون توليد تلقائي)
     useEffect(() => {
         if (selectedCondition) {
             loadRecipes(1);
@@ -65,18 +68,20 @@ export default function MedicalRecipesPage() {
             const res = await axios.get(
                 `/api/medical-recipes?condition=${selectedCondition}&lang=${lang}&page=${page}`
             );
-
             if (res.data.data.recipes && res.data.data.recipes.length > 0) {
                 setRecipes(res.data.data.recipes);
                 setPagination(res.data.data.pagination);
                 setCurrentPage(page);
+                setIsFirstLoad(false);
             } else {
-                if (page === 1) {
-                    await generateRecipes();
-                }
+                // عرض empty state فقط (بدون توليد تلقائي)
+                setRecipes([]);
+                setIsFirstLoad(false);
             }
         } catch (err) {
             console.error("Failed to load recipes", err);
+            setRecipes([]);
+            setIsFirstLoad(false);
         } finally {
             setLoading(false);
         }
@@ -96,6 +101,7 @@ export default function MedicalRecipesPage() {
     const generateRecipes = async (customRequest = null) => {
         setGenerating(true);
         setGenerationProgress(0);
+        setIsFirstLoad(false);
 
         const progressInterval = setInterval(() => {
             setGenerationProgress((prev) => {
@@ -109,16 +115,13 @@ export default function MedicalRecipesPage() {
                 condition: selectedCondition,
                 lang: lang,
             };
-
             if (customRequest && customRequest.trim()) {
                 payload.custom_request = customRequest.trim();
             }
-
             const res = await axios.post(
                 "/api/medical-recipes/generate",
                 payload
             );
-
             clearInterval(progressInterval);
             setGenerationProgress(100);
 
@@ -153,6 +156,7 @@ export default function MedicalRecipesPage() {
         <div className="min-h-screen bg-gradient-to-br from-teal-50 via-green-50 to-blue-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
             <Navbar />
 
+            {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-r from-green-600 via-teal-600 to-blue-600 text-white py-16 px-6">
                 <div className="absolute inset-0 overflow-hidden opacity-10">
                     <div className="absolute top-10 left-10 animate-float">
@@ -244,13 +248,16 @@ export default function MedicalRecipesPage() {
                 </div>
             </section>
 
+            {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 -mt-6 relative z-20">
+                {/* Custom Disease Input */}
                 <CustomDiseaseInput
                     onSubmit={handleCustomDiseaseSubmit}
                     lang={lang}
                     loading={generating}
                 />
 
+                {/* Condition Filter */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 md:p-6 mb-6">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4">
                         <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
@@ -287,6 +294,7 @@ export default function MedicalRecipesPage() {
                     />
                 </div>
 
+                {/* Nutrition Tips */}
                 {nutritionTips.length > 0 && (
                     <NutritionTips
                         tips={nutritionTips}
@@ -295,6 +303,7 @@ export default function MedicalRecipesPage() {
                     />
                 )}
 
+                {/* Generation Progress */}
                 {generating && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -331,33 +340,41 @@ export default function MedicalRecipesPage() {
                     </motion.div>
                 )}
 
+                {/* Recipes Grid */}
                 <div ref={recipesRef}>
                     {loading ? (
                         <LoadingSkeleton count={5} columns={5} />
                     ) : (
                         <>
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8"
-                            >
-                                <AnimatePresence mode="popLayout">
-                                    {recipes.slice(0, 5).map((recipe, idx) => (
-                                        <RecipeCard
-                                            key={recipe.id}
-                                            recipe={recipe}
-                                            index={idx}
-                                            lang={lang}
-                                            onView={() =>
-                                                setSelectedRecipe(recipe)
-                                            }
-                                        />
-                                    ))}
-                                </AnimatePresence>
-                            </motion.div>
+                            {recipes.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8"
+                                >
+                                    <AnimatePresence mode="popLayout">
+                                        {recipes
+                                            .slice(0, 5)
+                                            .map((recipe, idx) => (
+                                                <RecipeCard
+                                                    key={recipe.id}
+                                                    recipe={recipe}
+                                                    index={idx}
+                                                    lang={lang}
+                                                    onView={() =>
+                                                        setSelectedRecipe(
+                                                            recipe
+                                                        )
+                                                    }
+                                                />
+                                            ))}
+                                    </AnimatePresence>
+                                </motion.div>
+                            )}
                         </>
                     )}
 
+                    {/* Empty State */}
                     {!loading && !generating && recipes.length === 0 && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -370,18 +387,20 @@ export default function MedicalRecipesPage() {
                             />
                             <h3 className="text-2xl font-bold text-gray-600 dark:text-gray-400 mb-3">
                                 {lang === "ar"
-                                    ? "لا توجد وصفات"
-                                    : "No recipes yet"}
+                                    ? "لا توجد وصفات محفوظة"
+                                    : "No saved recipes yet"}
                             </h3>
                             <p className="text-gray-500 dark:text-gray-500 mb-6">
                                 {lang === "ar"
-                                    ? "اضغط 'توليد جديد' لإنشاء وصفات صحية"
-                                    : "Click 'Generate New' to create healthy recipes"}
+                                    ? "اضغط 'توليد جديد' لإنشاء وصفات صحية مخصصة"
+                                    : "Click 'Generate New' to create personalized healthy recipes"}
                             </p>
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => generateRecipes(null)}
-                                className="px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-2xl font-bold shadow-xl"
+                                disabled={generating}
+                                className="px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-2xl font-bold shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {lang === "ar" ? "توليد الآن" : "Generate Now"}
                             </motion.button>
@@ -390,6 +409,7 @@ export default function MedicalRecipesPage() {
                 </div>
             </main>
 
+            {/* Recipe Modal */}
             <RecipeModal
                 recipe={selectedRecipe}
                 isOpen={!!selectedRecipe}
@@ -397,6 +417,7 @@ export default function MedicalRecipesPage() {
                 lang={lang}
             />
 
+            {/* ChatBot */}
             <ChatBot
                 isOpen={showChatBot}
                 onClose={() => setShowChatBot(false)}
@@ -404,6 +425,7 @@ export default function MedicalRecipesPage() {
                 condition={selectedCondition}
             />
 
+            {/* Floating ChatBot Button */}
             {!showChatBot && (
                 <motion.button
                     initial={{ scale: 0 }}
@@ -418,6 +440,7 @@ export default function MedicalRecipesPage() {
 
             <Footer />
 
+            {/* Animations */}
             <style>{`
                 @keyframes float {
                     0%, 100% { transform: translateY(0px); }
