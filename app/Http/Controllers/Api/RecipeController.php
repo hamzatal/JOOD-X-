@@ -161,11 +161,16 @@ class RecipeController extends Controller
         }
     }
 
+    // ✅ الإصلاح هنا
     private function translateBasicMeal($meal)
     {
         $meal['strMealAr'] = $meal['strMeal'] ?? '';
         $meal['strCategoryAr'] = $this->translateBasic($meal['strCategory'] ?? '', 'category');
         $meal['strAreaAr'] = $this->translateBasic($meal['strArea'] ?? '', 'area');
+
+        // ✅ إضافة التعليمات العربية (نفس الإنجليزية حالياً)
+        $meal['strInstructionsAr'] = $meal['strInstructions'] ?? '';
+
         return $meal;
     }
 
@@ -178,13 +183,32 @@ class RecipeController extends Controller
                 'Dessert' => 'حلويات',
                 'Pasta' => 'باستا',
                 'Vegetarian' => 'نباتي',
+                'Vegan' => 'نباتي صارم',
+                'Seafood' => 'مأكولات بحرية',
+                'Lamb' => 'لحم خروف',
                 'Side' => 'طبق جانبي',
+                'Starter' => 'مقبلات',
                 'Breakfast' => 'فطور',
+                'Miscellaneous' => 'متنوع',
             ],
             'area' => [
                 'Egyptian' => 'مصري',
                 'Moroccan' => 'مغربي',
                 'Turkish' => 'تركي',
+                'Tunisian' => 'تونسي',
+                'Lebanese' => 'لبناني',
+                'American' => 'أمريكي',
+                'British' => 'بريطاني',
+                'Chinese' => 'صيني',
+                'French' => 'فرنسي',
+                'Indian' => 'هندي',
+                'Italian' => 'إيطالي',
+                'Japanese' => 'ياباني',
+                'Mexican' => 'مكسيكي',
+                'Spanish' => 'إسباني',
+                'Thai' => 'تايلندي',
+                'Vietnamese' => 'فيتنامي',
+                'Greek' => 'يوناني',
             ],
         ];
         return $dict[$type][$text] ?? $text;
@@ -192,7 +216,7 @@ class RecipeController extends Controller
 
     private function isHalal($meal)
     {
-        $forbidden = ['pork', 'bacon', 'ham', 'wine', 'beer', 'alcohol'];
+        $forbidden = ['pork', 'bacon', 'ham', 'wine', 'beer', 'alcohol', 'rum', 'vodka', 'whiskey'];
         $text = strtolower(json_encode($meal));
         foreach ($forbidden as $w) {
             if (strpos($text, $w) !== false) return false;
