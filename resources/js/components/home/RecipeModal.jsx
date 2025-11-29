@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     X,
     ChefHat,
@@ -15,52 +16,29 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
     const isRTL = lang === "ar";
     const t = (ar, en) => (lang === "ar" ? ar : en);
 
+    const [expanded, setExpanded] = useState(false);
+
     const displayTitle =
         lang === "ar" && meal.strMealAr ? meal.strMealAr : meal.strMeal;
-
     const displayCategory =
         lang === "ar" && meal.strCategoryAr
             ? meal.strCategoryAr
             : meal.strCategory;
-
     const displayArea =
         lang === "ar" && meal.strAreaAr ? meal.strAreaAr : meal.strArea;
-
     const displayInstructions =
         lang === "ar" && meal.strInstructionsAr
             ? meal.strInstructionsAr
             : meal.strInstructions;
 
-    // ✅ استخراج المكونات مع الترجمة
     const ingredients = Array.from({ length: 20 }, (_, i) => {
         const ingredientEn = meal[`strIngredient${i + 1}`]?.trim();
         const ingredientAr = meal[`strIngredient${i + 1}Ar`]?.trim();
         const measure = meal[`strMeasure${i + 1}`]?.trim();
-
-        // اختيار المكون حسب اللغة
         const ingredient =
             lang === "ar" && ingredientAr ? ingredientAr : ingredientEn;
-
         return { ingredient, measure };
     }).filter((item) => item.ingredient);
-
-    const handleShare = async () => {
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: displayTitle,
-                    text: displayInstructions?.substring(0, 100),
-                    url: window.location.href,
-                });
-            } catch (err) {
-                console.log("Share cancelled");
-            }
-        }
-    };
-
-    const handlePrint = () => {
-        window.print();
-    };
 
     return (
         <motion.div
@@ -90,7 +68,6 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                         className="w-full h-64 lg:w-96 lg:h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-
                     <div
                         className={`absolute bottom-4 ${
                             isRTL ? "right-4" : "left-4"
@@ -128,19 +105,27 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                                 {displayTitle}
                             </h2>
                         </div>
-
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={handleShare}
+                                onClick={() =>
+                                    navigator
+                                        .share?.({
+                                            title: displayTitle,
+                                            text: displayInstructions?.substring(
+                                                0,
+                                                100
+                                            ),
+                                            url: window.location.href,
+                                        })
+                                        .catch(() => {})
+                                }
                                 className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white transition hover:scale-110"
-                                title={t("مشاركة", "Share")}
                             >
                                 <Share2 size={20} />
                             </button>
                             <button
-                                onClick={handlePrint}
+                                onClick={() => window.print()}
                                 className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white transition hover:scale-110"
-                                title={t("طباعة", "Print")}
                             >
                                 <Printer size={20} />
                             </button>
@@ -202,7 +187,7 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                             </div>
                         </div>
 
-                        {/* Instructions */}
+                        {/* Instructions - بسيطة ومضمونة */}
                         <div>
                             <h3
                                 className={`text-xl font-bold text-green-400 mb-4 flex items-center gap-3 ${
@@ -212,16 +197,42 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                                 <BookOpen size={22} />
                                 {t("طريقة التحضير", "Instructions")}
                             </h3>
-                            <p
+
+                            <div
                                 className={`text-gray-300 leading-relaxed text-sm md:text-base whitespace-pre-line bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 ${
                                     isRTL ? "text-right" : "text-left"
                                 }`}
                             >
-                                {displayInstructions}
-                            </p>
+                                {/* عرض جزء من النص */}
+                                <div className={expanded ? "" : "line-clamp-6"}>
+                                    {displayInstructions ||
+                                        t(
+                                            "لا توجد تعليمات",
+                                            "No instructions available"
+                                        )}
+                                </div>
+
+                                {/* زر بسيط */}
+                                {displayInstructions &&
+                                    displayInstructions.length > 300 && (
+                                        <button
+                                            onClick={() =>
+                                                setExpanded(!expanded)
+                                            }
+                                            className="mt-4 text-green-400 hover:text-green-300 font-semibold underline transition"
+                                        >
+                                            {expanded
+                                                ? t("عرض أقل ▲", "Show Less ▲")
+                                                : t(
+                                                      "عرض المزيد ▼",
+                                                      "Show More ▼"
+                                                  )}
+                                        </button>
+                                    )}
+                            </div>
                         </div>
 
-                        {/* Video if available */}
+                        {/* Video */}
                         {meal.strYoutube && (
                             <div>
                                 <h3
@@ -254,19 +265,14 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
             </motion.div>
 
             <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: #1f2937;
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #10b981;
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #059669;
+                .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+                .line-clamp-6 {
+                    display: -webkit-box;
+                    -webkit-line-clamp: 6;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
                 }
             `}</style>
         </motion.div>
