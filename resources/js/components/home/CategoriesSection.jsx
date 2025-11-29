@@ -3,8 +3,8 @@ import {
     Cookie,
     Salad,
     Pizza,
-    Coffee,
     IceCream,
+    Beef as BeefIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLang } from "@/context/LangContext";
@@ -16,15 +16,15 @@ export default function CategoriesSection() {
     const categories = [
         {
             icon: Pizza,
-            nameAr: "بيتزا وباستا",
-            nameEn: "Pizza & Pasta",
+            nameAr: "باستا",
+            nameEn: "Pasta",
             color: "from-red-500 to-orange-500",
             count: "150+",
         },
         {
             icon: Salad,
-            nameAr: "سلطات صحية",
-            nameEn: "Healthy Salads",
+            nameAr: "نباتي",
+            nameEn: "Vegetarian",
             color: "from-green-500 to-emerald-500",
             count: "120+",
         },
@@ -36,31 +36,32 @@ export default function CategoriesSection() {
             count: "200+",
         },
         {
-            icon: Coffee,
-            nameAr: "مشروبات",
-            nameEn: "Beverages",
-            color: "from-amber-500 to-yellow-500",
-            count: "80+",
-        },
-        {
-            icon: UtensilsCrossed,
-            nameAr: "أطباق رئيسية",
-            nameEn: "Main Courses",
+            icon: BeefIcon,
+            nameAr: "لحم بقر",
+            nameEn: "Beef",
             color: "from-blue-500 to-cyan-500",
             count: "300+",
         },
         {
+            icon: UtensilsCrossed,
+            nameAr: "دجاج",
+            nameEn: "Chicken",
+            color: "from-amber-500 to-yellow-500",
+            count: "180+",
+        },
+        {
             icon: IceCream,
-            nameAr: "وجبات خفيفة",
-            nameEn: "Snacks",
+            nameAr: "فطور",
+            nameEn: "Breakfast",
             color: "from-indigo-500 to-purple-500",
             count: "90+",
         },
     ];
 
     const handleCategoryClick = (cat) => {
-        const label = lang === "ar" ? cat.nameEn : cat.nameEn;
-        window.location.href = `/recipes?category=${encodeURIComponent(label)}`;
+        window.location.href = `/recipes?category=${encodeURIComponent(
+            cat.nameEn
+        )}`;
     };
 
     return (

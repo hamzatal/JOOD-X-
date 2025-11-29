@@ -15,9 +15,9 @@ import {
     Pizza,
     Salad,
     Cookie,
-    Coffee,
     UtensilsCrossed,
     IceCream,
+    Beef as BeefIcon,
 } from "lucide-react";
 import axios from "axios";
 import RecipeModal from "@/components/home/RecipeModal";
@@ -37,14 +37,14 @@ export default function RecipesPage() {
     const recipesPerPage = 10;
     const isRTL = lang === "ar";
 
-    // ✅ Mapping بين الاسم الظاهر والـ API
+    // ✅ Mapping صحيح 100%
     const CATEGORY_MAPPING = {
-        "Pizza & Pasta": { id: "pasta", api: "Pasta" },
-        "Healthy Salads": { id: "vegetarian", api: "Vegetarian" },
+        Pasta: { id: "pasta", api: "Pasta" },
+        Vegetarian: { id: "vegetarian", api: "Vegetarian" },
         Desserts: { id: "dessert", api: "Dessert" },
-        Beverages: { id: "side", api: "Side" },
-        "Main Courses": { id: "beef", api: "Beef" },
-        Snacks: { id: "breakfast", api: "Breakfast" },
+        Beef: { id: "beef", api: "Beef" },
+        Chicken: { id: "chicken", api: "Chicken" },
+        Breakfast: { id: "breakfast", api: "Breakfast" },
     };
 
     const categories = [
@@ -58,14 +58,14 @@ export default function RecipesPage() {
         {
             id: "pasta",
             icon: Pizza,
-            name: t("بيتزا وباستا", "Pizza & Pasta"),
+            name: t("باستا", "Pasta"),
             apiName: "Pasta",
             color: "from-red-500 to-orange-500",
         },
         {
             id: "vegetarian",
             icon: Salad,
-            name: t("سلطات صحية", "Healthy Salads"),
+            name: t("نباتي", "Vegetarian"),
             apiName: "Vegetarian",
             color: "from-green-500 to-emerald-500",
         },
@@ -77,23 +77,23 @@ export default function RecipesPage() {
             color: "from-pink-500 to-purple-500",
         },
         {
-            id: "side",
-            icon: Coffee,
-            name: t("مشروبات", "Beverages"),
-            apiName: "Side",
-            color: "from-amber-500 to-yellow-500",
-        },
-        {
             id: "beef",
-            icon: UtensilsCrossed,
-            name: t("أطباق رئيسية", "Main Courses"),
+            icon: BeefIcon,
+            name: t("لحم بقر", "Beef"),
             apiName: "Beef",
             color: "from-blue-500 to-cyan-500",
         },
         {
+            id: "chicken",
+            icon: UtensilsCrossed,
+            name: t("دجاج", "Chicken"),
+            apiName: "Chicken",
+            color: "from-amber-500 to-yellow-500",
+        },
+        {
             id: "breakfast",
             icon: IceCream,
-            name: t("وجبات خفيفة", "Snacks"),
+            name: t("فطور", "Breakfast"),
             apiName: "Breakfast",
             color: "from-indigo-500 to-purple-500",
         },
@@ -104,7 +104,6 @@ export default function RecipesPage() {
         const categoryFromUrl = urlParams.get("category");
 
         if (categoryFromUrl) {
-            // ✅ البحث في الـ mapping
             const mapping = CATEGORY_MAPPING[categoryFromUrl];
 
             if (mapping) {
@@ -125,6 +124,7 @@ export default function RecipesPage() {
             );
             setRecipes(response.data.recipes || []);
         } catch (error) {
+            console.error("Error:", error);
         } finally {
             setLoading(false);
         }
@@ -142,6 +142,7 @@ export default function RecipesPage() {
             );
             setRecipes(response.data.recipes || []);
         } catch (error) {
+            console.error("Error:", error);
         } finally {
             setLoading(false);
         }
@@ -157,30 +158,12 @@ export default function RecipesPage() {
             window.history.pushState({}, "", "/recipes");
             fetchRecipes();
         } else {
-            // استخدام الاسم الإنجليزي للـ URL
-            const englishName =
-                categories.find((c) => c.id === categoryId)?.name || "";
-            const nameToUse =
-                lang === "ar"
-                    ? category.id === "pasta"
-                        ? "Pizza & Pasta"
-                        : category.id === "vegetarian"
-                        ? "Healthy Salads"
-                        : category.id === "dessert"
-                        ? "Desserts"
-                        : category.id === "side"
-                        ? "Beverages"
-                        : category.id === "beef"
-                        ? "Main Courses"
-                        : category.id === "breakfast"
-                        ? "Snacks"
-                        : englishName
-                    : englishName;
-
+            // ✅ استخدام apiName مباشرة
+            const urlName = category.apiName;
             window.history.pushState(
                 {},
                 "",
-                `/recipes?category=${encodeURIComponent(nameToUse)}`
+                `/recipes?category=${encodeURIComponent(urlName)}`
             );
             fetchRecipesByCategory(category.apiName);
         }
@@ -414,7 +397,6 @@ export default function RecipesPage() {
                     </div>
                 </div>
             </section>
-
             {/* Search */}
             <section className="px-4 md:px-8 py-6 bg-gray-900/30">
                 <div className="max-w-7xl mx-auto">
@@ -651,3 +633,5 @@ export default function RecipesPage() {
         </div>
     );
 }
+
+       

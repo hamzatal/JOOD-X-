@@ -14,12 +14,10 @@ import {
     Pizza,
     Salad,
     Cookie,
-    Coffee,
     UtensilsCrossed,
     IceCream,
-    ChartAreaIcon,
-    AlignLeftIcon,
     Grid,
+    Beef as BeefIcon,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -45,37 +43,42 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
     const categories = [
         {
             icon: Pizza,
-            name: t("بيتزا وباستا", "Pizza & Pasta"),
+            nameAr: "باستا",
+            nameEn: "Pasta",
             color: "from-red-500 to-orange-500",
         },
         {
             icon: Salad,
-            name: t("سلطات صحية", "Healthy Salads"),
+            nameAr: "نباتي",
+            nameEn: "Vegetarian",
             color: "from-green-500 to-emerald-500",
         },
         {
             icon: Cookie,
-            name: t("حلويات", "Desserts"),
+            nameAr: "حلويات",
+            nameEn: "Desserts",
             color: "from-pink-500 to-purple-500",
         },
         {
-            icon: Coffee,
-            name: t("مشروبات", "Beverages"),
-            color: "from-amber-500 to-yellow-500",
-        },
-        {
-            icon: UtensilsCrossed,
-            name: t("أطباق رئيسية", "Main Courses"),
+            icon: BeefIcon,
+            nameAr: "لحم بقر",
+            nameEn: "Beef",
             color: "from-blue-500 to-cyan-500",
         },
         {
+            icon: UtensilsCrossed,
+            nameAr: "دجاج",
+            nameEn: "Chicken",
+            color: "from-amber-500 to-yellow-500",
+        },
+        {
             icon: IceCream,
-            name: t("وجبات خفيفة", "Snacks"),
+            nameAr: "فطور",
+            nameEn: "Breakfast",
             color: "from-indigo-500 to-purple-500",
         },
     ];
 
-    // Handle dropdown with delay
     const handleMouseEnter = () => {
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
@@ -86,7 +89,7 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
     const handleMouseLeave = () => {
         timeoutRef.current = setTimeout(() => {
             setDropdownOpen(false);
-        }, 200); 
+        }, 200);
     };
 
     useEffect(() => {
@@ -100,7 +103,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
     return (
         <header className="w-full sticky top-0 z-50 backdrop-blur-xl bg-gray-900/90 border-b border-gray-700/40 shadow-xl">
             <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-6 py-3">
-                {/* LOGO */}
                 <Link href="/" className="flex items-center flex-shrink-0">
                     <img
                         src="/images/joodw.png"
@@ -110,7 +112,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     />
                 </Link>
 
-                {/* Desktop menu */}
                 <div className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm">
                     <Link
                         href="/"
@@ -132,7 +133,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                         <Lightbulb size={16} /> {t("شو اطبخ؟", "What to Cook?")}
                     </Link>
 
-                    {/* Recipes Dropdown - محسّن */}
                     <div
                         className="relative"
                         onMouseEnter={handleMouseEnter}
@@ -156,7 +156,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                             />
                         </button>
 
-                        {/* Dropdown Menu */}
                         {dropdownOpen && (
                             <div className="absolute top-full left-0 mt-2 w-64 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                                 <div className="p-2">
@@ -178,12 +177,12 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                                     <div className="my-2 h-px bg-gray-700"></div>
 
                                     {categories.map((cat, idx) => {
-                                        const IconComponent = cat.icon; // ✅ تصحيح render الأيقونة
+                                        const IconComponent = cat.icon;
                                         return (
                                             <Link
                                                 key={idx}
                                                 href={`/recipes?category=${encodeURIComponent(
-                                                    cat.name
+                                                    cat.nameEn
                                                 )}`}
                                                 className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-700 transition text-gray-300 hover:text-white text-sm"
                                             >
@@ -195,7 +194,11 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                                                         className="text-white"
                                                     />
                                                 </div>
-                                                <span>{cat.name}</span>
+                                                <span>
+                                                    {lang === "ar"
+                                                        ? cat.nameAr
+                                                        : cat.nameEn}
+                                                </span>
                                             </Link>
                                         );
                                     })}
@@ -237,13 +240,12 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     </Link>
                 </div>
 
-                {/* Right side buttons */}
                 <div className="hidden lg:flex items-center gap-3">
                     <button
                         onClick={() => changeLang(lang === "ar" ? "en" : "ar")}
                         className="px-3 py-1.5 bg-gray-800 text-gray-200 rounded-lg hover:bg-gray-700 transition text-sm font-medium"
                     >
-                        {lang === "ar" ? "EN" : "AR"}
+                        {lang === "ar" ? "EN" : "ع"}
                     </button>
 
                     {!isLoggedIn && !isAdmin ? (
@@ -255,8 +257,7 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                                     : "bg-green-600 hover:bg-green-700"
                             }`}
                         >
-                            <LogIn size={16} />{" "}
-                            {t("دخول / تسجيل", "Login / Register")}
+                            <LogIn size={16} /> {t("دخول", "Login")}
                         </Link>
                     ) : isAdmin ? (
                         <Link
@@ -283,7 +284,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     )}
                 </div>
 
-                {/* Mobile menu toggle */}
                 <button
                     className="lg:hidden text-white p-2"
                     onClick={() => setOpen(!open)}
@@ -292,7 +292,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                 </button>
             </nav>
 
-            {/* Mobile menu */}
             {open && (
                 <div className="lg:hidden px-4 py-6 bg-gray-900/95 backdrop-blur-xl border-t border-gray-700">
                     <div className="flex flex-col gap-3 text-gray-200">
@@ -321,7 +320,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                             {t("شو اطبخ؟", "What to Cook?")}
                         </Link>
 
-                        {/* Mobile Recipes Accordion */}
                         <div>
                             <Link
                                 href="/recipes"
@@ -337,12 +335,12 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
 
                             <div className="mt-2 ml-6 space-y-1">
                                 {categories.map((cat, idx) => {
-                                    const IconComponent = cat.icon; // ✅ تصحيح
+                                    const IconComponent = cat.icon;
                                     return (
                                         <Link
                                             key={idx}
                                             href={`/recipes?category=${encodeURIComponent(
-                                                cat.name
+                                                cat.nameEn
                                             )}`}
                                             className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-800 transition text-sm"
                                             onClick={() => setOpen(false)}
@@ -355,7 +353,11 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                                                     className="text-white"
                                                 />
                                             </div>
-                                            <span>{cat.name}</span>
+                                            <span>
+                                                {lang === "ar"
+                                                    ? cat.nameAr
+                                                    : cat.nameEn}
+                                            </span>
                                         </Link>
                                     );
                                 })}
