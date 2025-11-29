@@ -95,15 +95,9 @@ export default function RandomRecipesSection() {
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className={`flex-1 ${
-                            lang === "ar" ? "text-right" : "text-left"
-                        }`}
+                        className="flex-1 text-center"
                     >
-                        <div
-                            className={`flex items-center gap-3 mb-3 ${
-                                lang === "ar" ? "justify-end" : "justify-start"
-                            }`}
-                        >
+                        <div className="flex items-center gap-3 mb-3 justify-center">
                             <Star className="w-8 h-8 text-amber-400" />
                             <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
                                 {t("الوصفات العشوائية", "Random Recipes")}
