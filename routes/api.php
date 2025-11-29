@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\HomePageController;
 use App\Http\Controllers\Api\WhatToCookController;
 use App\Http\Controllers\Api\MedicalRecipesController;
 use App\Http\Controllers\Api\RandomRecipesController;
+use App\Http\Controllers\Api\RecipeController;
 
 
 /*
@@ -31,6 +32,14 @@ Route::prefix('home-page')->group(function () {
 // ============================================================================
 Route::get('/random-recipes', [RandomRecipesController::class, 'index']);
 Route::post('/random-recipes/cache/clear', [RandomRecipesController::class, 'clearCache']);
+
+
+// ============================================================================
+// RECIPES - General Recipe Endpoints
+// ============================================================================
+Route::get('/recipes', [RecipeController::class, 'index']);
+Route::get('/recipes/category/{category}', [RecipeController::class, 'byCategory']);
+Route::get('/recipes/search', [RecipeController::class, 'search']);
 
 // ============================================================================
 // WHAT TO COOK - AI Recipe Generator & Chat

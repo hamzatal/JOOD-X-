@@ -1,6 +1,4 @@
 import {
-    ChefHat,
-    Globe,
     UtensilsCrossed,
     Cookie,
     Salad,
@@ -18,44 +16,51 @@ export default function CategoriesSection() {
     const categories = [
         {
             icon: Pizza,
-            name: t("بيتزا وباستا", "Pizza & Pasta"),
+            nameAr: "بيتزا وباستا",
+            nameEn: "Pizza & Pasta",
             color: "from-red-500 to-orange-500",
             count: "150+",
         },
         {
             icon: Salad,
-            name: t("سلطات صحية", "Healthy Salads"),
+            nameAr: "سلطات صحية",
+            nameEn: "Healthy Salads",
             color: "from-green-500 to-emerald-500",
             count: "120+",
         },
         {
             icon: Cookie,
-            name: t("حلويات", "Desserts"),
+            nameAr: "حلويات",
+            nameEn: "Desserts",
             color: "from-pink-500 to-purple-500",
             count: "200+",
         },
         {
             icon: Coffee,
-            name: t("مشروبات", "Beverages"),
+            nameAr: "مشروبات",
+            nameEn: "Beverages",
             color: "from-amber-500 to-yellow-500",
             count: "80+",
         },
         {
             icon: UtensilsCrossed,
-            name: t("أطباق رئيسية", "Main Courses"),
+            nameAr: "أطباق رئيسية",
+            nameEn: "Main Courses",
             color: "from-blue-500 to-cyan-500",
             count: "300+",
         },
         {
             icon: IceCream,
-            name: t("وجبات خفيفة", "Snacks"),
+            nameAr: "وجبات خفيفة",
+            nameEn: "Snacks",
             color: "from-indigo-500 to-purple-500",
             count: "90+",
         },
     ];
 
-    const handleCategoryClick = (category) => {
-        window.location.href = "/recipes";
+    const handleCategoryClick = (cat) => {
+        const label = lang === "ar" ? cat.nameEn : cat.nameEn;
+        window.location.href = `/recipes?category=${encodeURIComponent(label)}`;
     };
 
     return (
@@ -79,36 +84,41 @@ export default function CategoriesSection() {
                 </motion.div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {categories.map((cat, idx) => (
-                        <motion.button
-                            key={idx}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: idx * 0.1 }}
-                            whileHover={{ scale: 1.05, y: -5 }}
-                            onClick={() => handleCategoryClick(cat)}
-                            className="group relative p-6 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700 hover:border-gray-600 transition-all overflow-hidden"
-                        >
-                            <div
-                                className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 group-hover:opacity-10 transition-opacity`}
-                            ></div>
-
-                            <div className="relative z-10 flex flex-col items-center gap-3">
+                    {categories.map((cat, idx) => {
+                        const IconComponent = cat.icon;
+                        return (
+                            <motion.button
+                                key={idx}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.1 }}
+                                whileHover={{ scale: 1.05, y: -5 }}
+                                onClick={() => handleCategoryClick(cat)}
+                                className="group relative p-6 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700 hover:border-gray-600 transition-all overflow-hidden"
+                            >
                                 <div
-                                    className={`p-3 rounded-xl bg-gradient-to-br ${cat.color} shadow-lg`}
-                                >
-                                    <cat.icon className="w-6 h-6 text-white" />
+                                    className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 group-hover:opacity-10 transition-opacity`}
+                                ></div>
+
+                                <div className="relative z-10 flex flex-col items-center gap-3">
+                                    <div
+                                        className={`p-3 rounded-xl bg-gradient-to-br ${cat.color} shadow-lg`}
+                                    >
+                                        <IconComponent className="w-6 h-6 text-white" />
+                                    </div>
+                                    <h3 className="font-semibold text-white text-sm text-center">
+                                        {lang === "ar"
+                                            ? cat.nameAr
+                                            : cat.nameEn}
+                                    </h3>
+                                    <span className="text-xs text-gray-400">
+                                        {cat.count}
+                                    </span>
                                 </div>
-                                <h3 className="font-semibold text-white text-sm text-center">
-                                    {cat.name}
-                                </h3>
-                                <span className="text-xs text-gray-400">
-                                    {cat.count}
-                                </span>
-                            </div>
-                        </motion.button>
-                    ))}
+                            </motion.button>
+                        );
+                    })}
                 </div>
             </div>
         </section>

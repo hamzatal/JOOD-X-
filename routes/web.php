@@ -25,6 +25,14 @@ Route::get('/what-to-cook', function () {
 })->name('what-to-cook');
 
 // ==============================
+// Recipes page (Inertia)
+// ==============================
+Route::get('/recipes', function () {
+    return Inertia::render('RecipesPage');
+})->name('recipes');
+
+
+// ==============================
 // Medical recipes page (Inertia)
 // * ONLY page → NO JSON here
 // ==============================
