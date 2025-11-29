@@ -4,8 +4,6 @@ import {
     Globe,
     BookOpen,
     Sparkles,
-    Clock,
-    Users,
     Share2,
     Printer,
 } from "lucide-react";
@@ -17,17 +15,41 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
     const isRTL = lang === "ar";
     const t = (ar, en) => (lang === "ar" ? ar : en);
 
-    const ingredients = Array.from({ length: 20 }, (_, i) => ({
-        ingredient: meal[`strIngredient${i + 1}`]?.trim(),
-        measure: meal[`strMeasure${i + 1}`]?.trim(),
-    })).filter((item) => item.ingredient);
+    const displayTitle =
+        lang === "ar" && meal.strMealAr ? meal.strMealAr : meal.strMeal;
+
+    const displayCategory =
+        lang === "ar" && meal.strCategoryAr
+            ? meal.strCategoryAr
+            : meal.strCategory;
+
+    const displayArea =
+        lang === "ar" && meal.strAreaAr ? meal.strAreaAr : meal.strArea;
+
+    const displayInstructions =
+        lang === "ar" && meal.strInstructionsAr
+            ? meal.strInstructionsAr
+            : meal.strInstructions;
+
+    // ✅ استخراج المكونات مع الترجمة
+    const ingredients = Array.from({ length: 20 }, (_, i) => {
+        const ingredientEn = meal[`strIngredient${i + 1}`]?.trim();
+        const ingredientAr = meal[`strIngredient${i + 1}Ar`]?.trim();
+        const measure = meal[`strMeasure${i + 1}`]?.trim();
+
+        // اختيار المكون حسب اللغة
+        const ingredient =
+            lang === "ar" && ingredientAr ? ingredientAr : ingredientEn;
+
+        return { ingredient, measure };
+    }).filter((item) => item.ingredient);
 
     const handleShare = async () => {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: meal.strMeal,
-                    text: meal.strInstructions?.substring(0, 100),
+                    title: displayTitle,
+                    text: displayInstructions?.substring(0, 100),
                     url: window.location.href,
                 });
             } catch (err) {
@@ -64,7 +86,7 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                 >
                     <img
                         src={meal.strMealThumb}
-                        alt={meal.strMeal}
+                        alt={displayTitle}
                         className="w-full h-64 lg:w-96 lg:h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -76,11 +98,11 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                     >
                         <span className="flex items-center gap-2 px-3 py-1.5 bg-green-600/90 backdrop-blur-sm rounded-full text-white text-sm font-semibold border border-green-500/50 shadow-lg">
                             <ChefHat size={14} />
-                            {meal.strCategory}
+                            {displayCategory}
                         </span>
                         <span className="flex items-center gap-2 px-3 py-1.5 bg-amber-600/90 backdrop-blur-sm rounded-full text-white text-sm font-semibold border border-amber-500/50 shadow-lg">
                             <Globe size={14} />
-                            {meal.strArea}
+                            {displayArea}
                         </span>
                     </div>
                 </div>
@@ -97,13 +119,13 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                             isRTL ? "flex-row-reverse" : ""
                         }`}
                     >
-                        <div className="flex-1 pr-6">
+                        <div className={`flex-1 ${isRTL ? "pl-6" : "pr-6"}`}>
                             <h2
                                 className={`text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-400 via-green-300 to-amber-400 bg-clip-text text-transparent leading-tight ${
                                     isRTL ? "text-right" : "text-left"
                                 }`}
                             >
-                                {meal.strMeal}
+                                {displayTitle}
                             </h2>
                         </div>
 
@@ -195,7 +217,7 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                                     isRTL ? "text-right" : "text-left"
                                 }`}
                             >
-                                {meal.strInstructions}
+                                {displayInstructions}
                             </p>
                         </div>
 

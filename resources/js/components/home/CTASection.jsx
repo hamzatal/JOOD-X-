@@ -17,16 +17,14 @@ export default function CTASection() {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="relative overflow-hidden bg-gradient-to-r from-amber-600 via-amber-600 to-amber-600 rounded-3xl p-8 md:p-12 lg:p-16"
+                    className="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-green-600 to-lime-500 rounded-3xl p-8 md:p-12 lg:p-16"
                 >
-
                     {/* Content */}
                     <div
                         className={`relative z-10 ${
                             lang === "ar" ? "text-center" : "text-center"
                         }`}
                     >
-                      
                         <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
                             {t(
                                 "جاهز لاكتشاف وصفات جديدة؟",
