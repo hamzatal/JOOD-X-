@@ -16,7 +16,7 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
     const isRTL = lang === "ar";
     const t = (ar, en) => (lang === "ar" ? ar : en);
 
-    const [expanded, setExpanded] = useState(false);
+    const [showFullInstructions, setShowFullInstructions] = useState(false);
 
     const displayTitle =
         lang === "ar" && meal.strMealAr ? meal.strMealAr : meal.strMeal;
@@ -40,6 +40,9 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
         return { ingredient, measure };
     }).filter((item) => item.ingredient);
 
+    const shouldShowButton =
+        displayInstructions && displayInstructions.length > 400;
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -53,15 +56,13 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ type: "spring", damping: 25 }}
-                className="bg-gray-900 rounded-3xl shadow-2xl border border-gray-800 w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col lg:flex-row"
+                className={`bg-gray-900 rounded-3xl shadow-2xl border border-gray-800 w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col lg:flex-row ${
+                    isRTL ? "lg:flex-row-reverse" : ""
+                }`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Image section */}
-                <div
-                    className={`relative flex-shrink-0 ${
-                        isRTL ? "lg:order-2" : "lg:order-1"
-                    }`}
-                >
+                <div className="relative flex-shrink-0">
                     <img
                         src={meal.strMealThumb}
                         alt={displayTitle}
@@ -86,9 +87,8 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
 
                 {/* Content section */}
                 <div
-                    className={`flex-1 flex flex-col ${
-                        isRTL ? "lg:order-1" : "lg:order-2"
-                    }`}
+                    className="flex-1 flex flex-col"
+                    dir={isRTL ? "rtl" : "ltr"}
                 >
                     {/* Header */}
                     <div
@@ -120,18 +120,21 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                                         .catch(() => {})
                                 }
                                 className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white transition hover:scale-110"
+                                title={t("مشاركة", "Share")}
                             >
                                 <Share2 size={20} />
                             </button>
                             <button
                                 onClick={() => window.print()}
                                 className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white transition hover:scale-110"
+                                title={t("طباعة", "Print")}
                             >
                                 <Printer size={20} />
                             </button>
                             <button
                                 onClick={onClose}
                                 className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-red-600/80 text-gray-400 hover:text-white transition hover:scale-110"
+                                title={t("إغلاق", "Close")}
                             >
                                 <X size={24} />
                             </button>
@@ -187,7 +190,7 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                             </div>
                         </div>
 
-                        {/* Instructions - بسيطة ومضمونة */}
+                        {/* Instructions */}
                         <div>
                             <h3
                                 className={`text-xl font-bold text-green-400 mb-4 flex items-center gap-3 ${
@@ -203,32 +206,59 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                                     isRTL ? "text-right" : "text-left"
                                 }`}
                             >
-                                {/* عرض جزء من النص */}
-                                <div className={expanded ? "" : "line-clamp-6"}>
+                                {/* عرض النص */}
+                                <div
+                                    className={
+                                        showFullInstructions
+                                            ? ""
+                                            : "max-h-[300px] overflow-hidden relative"
+                                    }
+                                >
                                     {displayInstructions ||
                                         t(
-                                            "لا توجد تعليمات",
+                                            "لا توجد تعليمات متاحة",
                                             "No instructions available"
+                                        )}
+
+                                    {/* Gradient overlay */}
+                                    {!showFullInstructions &&
+                                        shouldShowButton && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-gray-800 to-transparent"></div>
                                         )}
                                 </div>
 
-                                {/* زر بسيط */}
-                                {displayInstructions &&
-                                    displayInstructions.length > 300 && (
+                                {/* زر عرض المزيد/أقل */}
+                                {shouldShowButton && (
+                                    <div className="mt-4 flex justify-center">
                                         <button
                                             onClick={() =>
-                                                setExpanded(!expanded)
+                                                setShowFullInstructions(
+                                                    !showFullInstructions
+                                                )
                                             }
-                                            className="mt-4 text-green-400 hover:text-green-300 font-semibold underline transition"
+                                            className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
                                         >
-                                            {expanded
-                                                ? t("عرض أقل ▲", "Show Less ▲")
-                                                : t(
-                                                      "عرض المزيد ▼",
-                                                      "Show More ▼"
-                                                  )}
+                                            {showFullInstructions ? (
+                                                <>
+                                                    {t("عرض أقل", "Show Less")}
+                                                    <span className="text-lg">
+                                                        {isRTL ? "▲" : "▲"}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {t(
+                                                        "عرض المزيد",
+                                                        "Show More"
+                                                    )}
+                                                    <span className="text-lg">
+                                                        {isRTL ? "▼" : "▼"}
+                                                    </span>
+                                                </>
+                                            )}
                                         </button>
-                                    )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -249,13 +279,14 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
                                     </svg>
                                     {t("فيديو الوصفة", "Recipe Video")}
                                 </h3>
-                                <div className="aspect-video rounded-2xl overflow-hidden">
+                                <div className="aspect-video rounded-2xl overflow-hidden border-2 border-gray-700 shadow-xl">
                                     <iframe
                                         src={`https://www.youtube.com/embed/${
                                             meal.strYoutube.split("v=")[1]
                                         }`}
                                         className="w-full h-full"
                                         allowFullScreen
+                                        title="Recipe Video"
                                     />
                                 </div>
                             </div>
@@ -265,14 +296,19 @@ export default function RecipeModal({ meal, onClose, lang = "en" }) {
             </motion.div>
 
             <style>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
-                .line-clamp-6 {
-                    display: -webkit-box;
-                    -webkit-line-clamp: 6;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(31, 41, 55, 0.5);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: linear-gradient(180deg, #10b981, #059669);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(180deg, #059669, #047857);
                 }
             `}</style>
         </motion.div>
