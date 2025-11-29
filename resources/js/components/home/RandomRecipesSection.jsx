@@ -33,7 +33,7 @@ export default function RandomRecipesSection() {
 
         try {
             const res = await axios.get(
-                `/api/home-page/random?lang=${lang}&refresh=${
+                `/api/random-recipes?lang=${lang}&refresh=${
                     refresh ? "true" : "false"
                 }`
             );

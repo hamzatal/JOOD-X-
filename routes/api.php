@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\HomePageController;
 use App\Http\Controllers\Api\WhatToCookController;
 use App\Http\Controllers\Api\MedicalRecipesController;
+use App\Http\Controllers\Api\RandomRecipesController;
 
 
 /*
@@ -23,8 +24,13 @@ use App\Http\Controllers\Api\MedicalRecipesController;
 Route::prefix('home-page')->group(function () {
     Route::get('/', [HomePageController::class, 'getTrendingRecipes']);
     Route::get('/trending', [HomePageController::class, 'getTrendingRecipes']);
-    Route::get('/random', [HomePageController::class, 'getRandomRecipes']);
 });
+
+// ============================================================================
+// RANDOM RECIPES
+// ============================================================================
+Route::get('/random-recipes', [RandomRecipesController::class, 'index']);
+Route::post('/random-recipes/cache/clear', [RandomRecipesController::class, 'clearCache']);
 
 // ============================================================================
 // WHAT TO COOK - AI Recipe Generator & Chat

@@ -12,59 +12,39 @@ use Illuminate\Http\Client\Pool;
 class HomePageController extends Controller
 {
     /**
-     * جلب الوصفات الشهيرية والتريند (محسّن - بدون Cache Tags)
+     * جلب الوصفات حسب اللغة
      */
     public function getTrendingRecipes(Request $request)
     {
         $lang = $request->query('lang', 'en');
         $refresh = $request->query('refresh', 'false') === 'true';
 
-        $cacheKey = "trending_recipes_{$lang}";
+        $cacheKey = "trending_halal_recipes_{$lang}";
 
         Log::info("Trending recipes request", ['lang' => $lang, 'refresh' => $refresh]);
 
-        // حذف الـ cache إذا كان refresh=true
         if ($refresh) {
             Cache::forget($cacheKey);
-            Log::info("Cache cleared for: {$cacheKey}");
         }
 
         try {
-            // استخدام Cache بدون Tags (يعمل مع file driver)
             $recipes = Cache::remember($cacheKey, 3600, function () use ($lang) {
-                Log::info("Fetching trending recipes from API for language: {$lang}");
-                
-                // استخدام TheMealDB كمصدر رئيسي (أسرع بكثير)
-                $recipes = $this->fetchTrendingFromMealDB($lang);
-                
-                // إذا فشل، استخدم OpenAI (بطيء لكن غني بالمحتوى العربي)
-                if (empty($recipes)) {
-                    Log::info("TheMealDB returned empty, trying OpenAI");
-                    $recipes = $this->fetchArabicRecipes($lang);
+                if ($lang === 'ar') {
+                    // جلب وصفات عربية من TheMealDB + ترجمة فورية
+                    return $this->fetchRealArabicRecipes();
+                } else {
+                    // وصفات عالمية
+                    return $this->fetchInternationalRecipes();
                 }
-                
-                return $recipes;
             });
 
             if (empty($recipes)) {
-                Log::warning("No recipes returned");
-                return response()->json([
-                    'recipes' => $this->getFallbackRecipes($lang), 
-                    'message' => 'Using fallback recipes'
-                ], 200);
+                $recipes = $this->getFallbackRecipes($lang);
             }
 
-            Log::info("Successfully returned recipes", ['count' => count($recipes), 'lang' => $lang]);
             return response()->json(['recipes' => $recipes], 200);
-
         } catch (\Exception $e) {
-            Log::error("Error fetching trending recipes: " . $e->getMessage(), [
-                'exception' => $e,
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
+            Log::error("Error: " . $e->getMessage());
             return response()->json([
                 'recipes' => $this->getFallbackRecipes($lang),
                 'error' => config('app.debug') ? $e->getMessage() : 'Failed to fetch recipes'
@@ -73,353 +53,391 @@ class HomePageController extends Controller
     }
 
     /**
-     * جلب الوصفات العشوائية (محسّن بـ Http::pool)
+     * جلب وصفات عربية حقيقية من TheMealDB (Egyptian, Moroccan, Turkish, Tunisian)
+     * مع ترجمة فورية للعربية باستخدام OpenAI
      */
-    public function getRandomRecipes(Request $request)
-    {
-        $lang = $request->query('lang', 'en');
-        $refresh = $request->query('refresh', 'false') === 'true';
-
-        $cacheKey = "random_recipes_{$lang}";
-
-        Log::info("Random recipes request", ['lang' => $lang, 'refresh' => $refresh]);
-
-        if ($refresh) {
-            Cache::forget($cacheKey);
-        }
-
-        try {
-            $recipes = Cache::remember($cacheKey, 1800, function () use ($lang) {
-                Log::info("Fetching random recipes using Http::pool");
-                return $this->fetchRandomRecipesFromAPI($lang);
-            });
-
-            return response()->json(['recipes' => $recipes], 200);
-
-        } catch (\Exception $e) {
-            Log::error("Error fetching random recipes: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'recipes' => $this->getFallbackRecipes($lang),
-                'error' => config('app.debug') ? $e->getMessage() : 'Failed to fetch recipes'
-            ], 200);
-        }
-    }
-
-    /**
-     * جلب وصفات تريند من TheMealDB (سريع جداً)
-     */
-    private function fetchTrendingFromMealDB($lang)
+    private function fetchRealArabicRecipes()
     {
         try {
-            Log::info("Starting fetchTrendingFromMealDB");
-            
-            // الفئات الشهيرة
-            $categories = ['Beef', 'Chicken', 'Dessert', 'Lamb', 'Pasta', 'Seafood', 'Vegetarian'];
-            
-            $recipes = [];
-            
-            // جلب متزامن باستخدام Http::pool
-            $responses = Http::pool(fn (Pool $pool) => 
-                collect($categories)->take(5)->map(fn($cat) => 
-                    $pool->timeout(8)->get("https://www.themealdb.com/api/json/v1/1/filter.php?c={$cat}")
+            Log::info("Fetching real Arabic recipes from TheMealDB");
+
+            // المناطق العربية والشرق أوسطية في TheMealDB
+            $arabicAreas = ['Egyptian', 'Moroccan', 'Turkish', 'Tunisian'];
+
+            $allRecipes = [];
+
+            // جلب جميع الوصفات من المناطق العربية
+            $responses = Http::pool(
+                fn(Pool $pool) =>
+                collect($arabicAreas)->map(
+                    fn($area) =>
+                    $pool->timeout(6)->get("https://www.themealdb.com/api/json/v1/1/filter.php?a={$area}")
                 )->toArray()
             );
 
-            Log::info("Pool responses received", ['count' => count($responses)]);
-
-            // معالجة النتائج
-            foreach ($responses as $index => $response) {
+            foreach ($responses as $response) {
                 if ($response->successful()) {
                     $meals = $response->json('meals', []);
-                    
-                    if (!empty($meals) && is_array($meals)) {
-                        // أخذ وصفتين عشوائيتين من كل فئة
-                        $count = min(2, count($meals));
-                        $selectedMeals = collect($meals)->random($count)->toArray();
-                        $recipes = array_merge($recipes, $selectedMeals);
+                    if (!empty($meals)) {
+                        $allRecipes = array_merge($allRecipes, $meals);
                     }
-                } else {
-                    Log::warning("Category request failed", ['index' => $index]);
                 }
             }
 
-            // جلب التفاصيل الكاملة للوصفات
-            if (!empty($recipes)) {
-                Log::info("Fetching full details for recipes", ['count' => count($recipes)]);
-                $recipes = $this->fetchFullRecipeDetails(array_slice($recipes, 0, 10), $lang);
+            if (empty($allRecipes)) {
+                Log::warning("No Arabic recipes found");
+                return [];
             }
 
-            Log::info("Trending recipes fetched successfully", ['count' => count($recipes)]);
-            return $recipes;
+            // اختيار 12 وصفة عشوائية
+            $selectedRecipes = collect($allRecipes)
+                ->shuffle()
+                ->take(12)
+                ->toArray();
 
+            // جلب التفاصيل الكاملة مع الترجمة
+            $fullRecipes = $this->fetchFullRecipeDetailsWithTranslation($selectedRecipes);
+
+            Log::info("Real Arabic recipes fetched", ['count' => count($fullRecipes)]);
+            return $fullRecipes;
         } catch (\Exception $e) {
-            Log::error("Error in fetchTrendingFromMealDB: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error("Error fetching Arabic recipes: " . $e->getMessage());
             return [];
         }
     }
 
     /**
-     * جلب التفاصيل الكاملة للوصفات بشكل متزامن
+     * جلب التفاصيل الكاملة مع ترجمة فورية
      */
-    private function fetchFullRecipeDetails(array $basicRecipes, $lang)
+    private function fetchFullRecipeDetailsWithTranslation(array $basicRecipes)
     {
         try {
             $ids = collect($basicRecipes)->pluck('idMeal')->filter()->toArray();
-            
+
             if (empty($ids)) {
                 return [];
             }
 
-            Log::info("Fetching details for IDs", ['ids' => $ids]);
-            
-            // جلب جميع التفاصيل بشكل متزامن
-            $responses = Http::pool(fn (Pool $pool) => 
-                collect($ids)->map(fn($id) => 
-                    $pool->timeout(8)->get("https://www.themealdb.com/api/json/v1/1/lookup.php?i={$id}")
+            Log::info("Fetching full details for recipes", ['count' => count($ids)]);
+
+            // جلب التفاصيل بشكل متزامن
+            $responses = Http::pool(
+                fn(Pool $pool) =>
+                collect($ids)->map(
+                    fn($id) =>
+                    $pool->timeout(6)->get("https://www.themealdb.com/api/json/v1/1/lookup.php?i={$id}")
                 )->toArray()
             );
 
-            $fullRecipes = [];
+            $finalRecipes = [];
 
             foreach ($responses as $response) {
                 if ($response->successful()) {
                     $meal = $response->json('meals.0');
-                    
-                    if ($meal) {
-                        // إضافة الحقول العربية إذا كانت اللغة عربية
-                        if ($lang === 'ar') {
-                            $meal = $this->addArabicTranslations($meal);
-                        }
-                        
+
+                    if ($meal && $this->isHalal($meal)) {
                         // استخراج المكونات
                         $meal['ingredients'] = $this->extractIngredients($meal);
-                        
-                        $fullRecipes[] = $meal;
+
+                        // ترجمة فورية باستخدام OpenAI
+                        $meal = $this->translateMealToArabicRealTime($meal);
+
+                        $finalRecipes[] = $meal;
+
+                        if (count($finalRecipes) >= 10) {
+                            break;
+                        }
                     }
                 }
             }
 
-            Log::info("Full recipes fetched", ['count' => count($fullRecipes)]);
-            return $fullRecipes;
-
+            return $finalRecipes;
         } catch (\Exception $e) {
-            Log::error("Error fetching full recipe details: " . $e->getMessage());
-            return $basicRecipes; // إرجاع الوصفات الأساسية في حالة الفشل
+            Log::error("Error: " . $e->getMessage());
+            return [];
         }
     }
 
     /**
-     * جلب الوصفات العشوائية باستخدام Http::pool (محسّن)
+     * ترجمة فورية للوصفة باستخدام OpenAI (مع Cache ذكي)
      */
-    private function fetchRandomRecipesFromAPI($lang)
-    {
-        try {
-            Log::info("Fetching 10 random recipes concurrently");
-
-            // جلب 10 وصفات عشوائية بشكل متزامن
-            $responses = Http::pool(fn (Pool $pool) => 
-                collect(range(1, 10))->map(fn() => 
-                    $pool->timeout(8)->get('https://www.themealdb.com/api/json/v1/1/random.php')
-                )->toArray()
-            );
-
-            $recipes = [];
-
-            foreach ($responses as $index => $response) {
-                if ($response->successful()) {
-                    $meal = $response->json('meals.0');
-                    
-                    if ($meal) {
-                        // إضافة ترجمات عربية
-                        if ($lang === 'ar') {
-                            $meal = $this->addArabicTranslations($meal);
-                        }
-                        
-                        // استخراج المكونات
-                        $meal['ingredients'] = $this->extractIngredients($meal);
-                        
-                        $recipes[] = $meal;
-                    }
-                } else {
-                    Log::warning("Random recipe #{$index} failed");
-                }
-            }
-
-            if (empty($recipes)) {
-                Log::warning("No random recipes fetched");
-                return $this->getFallbackRecipes($lang);
-            }
-
-            Log::info("Successfully fetched random recipes", ['count' => count($recipes)]);
-            return $recipes;
-
-        } catch (\Exception $e) {
-            Log::error("Error in fetchRandomRecipesFromAPI: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-            return $this->getFallbackRecipes($lang);
-        }
-    }
-
-    /**
-     * جلب الوصفات العربية من OpenAI (محسّن)
-     */
-    private function fetchArabicRecipes($lang)
+    private function translateMealToArabicRealTime($meal)
     {
         $openaiKey = env('OPENAI_API_KEY');
 
-        if (!$openaiKey) {
-            Log::warning("OpenAI API Key is missing - skipping OpenAI recipes");
-            return [];
-        }
+        // الترجمات الأساسية (بدون OpenAI)
+        $meal['strCategoryAr'] = $this->translateBasic($meal['strCategory'], 'category');
+        $meal['strAreaAr'] = $this->translateBasic($meal['strArea'], 'area');
 
-        // تحسين الـ Prompt
-        $prompt = $lang === 'ar'
-            ? "قائمة JSON فقط بـ 10 وصفات عربية شهيرة. بدون markdown. الصيغة:
-            [{\"idMeal\":\"1\",\"strMeal\":\"المقلوبة\",\"strMealThumb\":\"https://www.themealdb.com/images/media/meals/llcbn01574260722.jpg\",\"strCategory\":\"رئيسي\",\"strArea\":\"فلسطيني\",\"strInstructions\":\"خطوات مختصرة\",\"ingredients\":[\"أرز\",\"دجاج\"]}]"
-            : "JSON only: 10 popular recipes. No markdown. Format:
-            [{\"idMeal\":\"1\",\"strMeal\":\"Pasta\",\"strMealThumb\":\"https://example.com/img.jpg\",\"strCategory\":\"Pasta\",\"strArea\":\"Italian\",\"strInstructions\":\"steps\",\"ingredients\":[\"pasta\",\"sauce\"]}]";
+        if (!$openaiKey) {
+            Log::warning("OpenAI missing - using basic translations");
+            $meal['strMealAr'] = $meal['strMeal'];
+            $meal['strInstructionsAr'] = $meal['strInstructions'];
+            return $meal;
+        }
 
         try {
-            Log::info("Calling OpenAI API for language: {$lang}");
+            // ترجمة الاسم فقط (سريع)
+            $cacheKey = "meal_name_ar_" . md5($meal['strMeal']);
 
-            $response = Http::timeout(25)
-                ->retry(2, 1000)
-                ->withToken($openaiKey)
-                ->post('https://api.openai.com/v1/chat/completions', [
-                    'model' => 'gpt-4o-mini',
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => 'Return ONLY valid JSON array. No markdown, no explanations.'
+            $translatedName = Cache::remember($cacheKey, 86400, function () use ($meal, $openaiKey) {
+                Log::info("Translating meal name", ['name' => $meal['strMeal']]);
+
+                $response = Http::timeout(8)
+                    ->withToken($openaiKey)
+                    ->post('https://api.openai.com/v1/chat/completions', [
+                        'model' => 'gpt-4o-mini',
+                        'messages' => [
+                            [
+                                'role' => 'system',
+                                'content' => 'أنت مترجم متخصص في أسماء الأطباق. ترجم اسم الطبق للعربية بدقة. أعطِ الترجمة فقط بدون أي نص إضافي.'
+                            ],
+                            [
+                                'role' => 'user',
+                                'content' => "ترجم اسم الطبق للعربية: {$meal['strMeal']}"
+                            ]
                         ],
-                        [
-                            'role' => 'user',
-                            'content' => $prompt
-                        ]
-                    ],
-                    'max_tokens' => 1500,
-                    'temperature' => 0.5
-                ]);
+                        'max_tokens' => 30,
+                        'temperature' => 0.3
+                    ]);
 
-            if ($response->failed()) {
-                Log::error("OpenAI API failed", ['status' => $response->status()]);
-                return [];
-            }
-
-            $content = $response->json('choices.0.message.content');
-
-            if (!$content) {
-                Log::error("Empty content from OpenAI");
-                return [];
-            }
-
-            $recipes = $this->parseJSON($content);
-
-            if (empty($recipes)) {
-                Log::warning("No recipes parsed from OpenAI");
-                return [];
-            }
-
-            Log::info("OpenAI recipes parsed", ['count' => count($recipes)]);
-
-            // جلب الصور فقط للوصفات بدون صور
-            foreach ($recipes as &$recipe) {
-                if (empty($recipe['strMealThumb']) || !filter_var($recipe['strMealThumb'], FILTER_VALIDATE_URL)) {
-                    $recipe['strMealThumb'] = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop';
+                if ($response->successful()) {
+                    return trim($response->json('choices.0.message.content'));
                 }
-                
-                if (empty($recipe['idMeal'])) {
-                    $recipe['idMeal'] = uniqid('recipe_');
+
+                return null;
+            });
+
+            $meal['strMealAr'] = $translatedName ?? $meal['strMeal'];
+
+            // ترجمة الخطوات (مختصرة - أول 300 حرف فقط)
+            $shortInstructions = mb_substr($meal['strInstructions'], 0, 300);
+            $instructionsCacheKey = "instructions_ar_" . md5($shortInstructions);
+
+            $translatedInstructions = Cache::remember($instructionsCacheKey, 86400, function () use ($shortInstructions, $openaiKey) {
+                $response = Http::timeout(10)
+                    ->withToken($openaiKey)
+                    ->post('https://api.openai.com/v1/chat/completions', [
+                        'model' => 'gpt-4o-mini',
+                        'messages' => [
+                            [
+                                'role' => 'system',
+                                'content' => 'ترجم خطوات الطبخ للعربية بشكل واضح ومختصر.'
+                            ],
+                            [
+                                'role' => 'user',
+                                'content' => "ترجم للعربية:\n\n{$shortInstructions}"
+                            ]
+                        ],
+                        'max_tokens' => 400,
+                        'temperature' => 0.3
+                    ]);
+
+                if ($response->successful()) {
+                    return trim($response->json('choices.0.message.content'));
                 }
-            }
 
-            return $recipes;
+                return null;
+            });
 
+            $meal['strInstructionsAr'] = $translatedInstructions ?? $meal['strInstructions'];
+
+            Log::info("Translation successful", [
+                'original' => $meal['strMeal'],
+                'translated' => $meal['strMealAr']
+            ]);
         } catch (\Exception $e) {
-            Log::error("Error in fetchArabicRecipes: " . $e->getMessage());
-            return [];
+            Log::error("Translation error: " . $e->getMessage());
+            $meal['strMealAr'] = $meal['strMeal'];
+            $meal['strInstructionsAr'] = $meal['strInstructions'];
         }
-    }
-
-    /**
-     * استخراج المكونات من الوصفة
-     */
-    private function extractIngredients($meal)
-    {
-        $ingredients = [];
-        
-        for ($i = 1; $i <= 20; $i++) {
-            $ingredient = $meal["strIngredient{$i}"] ?? null;
-            $measure = $meal["strMeasure{$i}"] ?? null;
-            
-            if (!empty($ingredient) && trim($ingredient) !== '') {
-                $ingredients[] = trim($measure . ' ' . $ingredient);
-            }
-        }
-        
-        return $ingredients;
-    }
-
-    /**
-     * إضافة ترجمات عربية
-     */
-    private function addArabicTranslations($meal)
-    {
-        $translations = [
-            'Beef' => 'لحم بقر',
-            'Chicken' => 'دجاج',
-            'Dessert' => 'حلويات',
-            'Lamb' => 'لحم خروف',
-            'Pasta' => 'معكرونة',
-            'Seafood' => 'مأكولات بحرية',
-            'Vegetarian' => 'نباتي',
-            'Breakfast' => 'فطور',
-            'Side' => 'طبق جانبي',
-            'Starter' => 'مقبلات',
-            'Vegan' => 'نباتي صارم',
-            'Pork' => 'لحم خنزير' // لن نستخدمه لكن للترجمة فقط
-        ];
-
-        $meal['strMealAr'] = $meal['strMeal'] ?? '';
-        $meal['strCategoryAr'] = $translations[$meal['strCategory'] ?? ''] ?? ($meal['strCategory'] ?? '');
-        $meal['strAreaAr'] = $meal['strArea'] ?? '';
-        $meal['strInstructionsAr'] = $meal['strInstructions'] ?? '';
 
         return $meal;
     }
 
     /**
-     * Parse JSON من نص
+     * ترجمات أساسية (بدون OpenAI)
      */
-    private function parseJSON($text)
+    private function translateBasic($text, $type)
     {
-        // إزالة markdown
-        $text = preg_replace('/```/i', '', $text);
-        $text = preg_replace('/```\s*/i', '', $text);
-        $text = trim($text);
+        $translations = [
+            'category' => [
+                'Beef' => 'لحم بقر',
+                'Chicken' => 'دجاج',
+                'Dessert' => 'حلويات',
+                'Lamb' => 'لحم خروف',
+                'Pasta' => 'معكرونة',
+                'Seafood' => 'مأكولات بحرية',
+                'Vegetarian' => 'نباتي',
+                'Vegan' => 'نباتي صارم',
+                'Breakfast' => 'فطور',
+                'Side' => 'طبق جانبي',
+                'Starter' => 'مقبلات',
+                'Miscellaneous' => 'متنوع'
+            ],
+            'area' => [
+                'Egyptian' => 'مصري',
+                'Moroccan' => 'مغربي',
+                'Turkish' => 'تركي',
+                'Tunisian' => 'تونسي',
+                'Lebanese' => 'لبناني',
+                'American' => 'أمريكي',
+                'British' => 'بريطاني',
+                'Chinese' => 'صيني',
+                'French' => 'فرنسي',
+                'Indian' => 'هندي',
+                'Italian' => 'إيطالي',
+                'Japanese' => 'ياباني',
+                'Mexican' => 'مكسيكي',
+                'Spanish' => 'إسباني',
+                'Thai' => 'تايلندي'
+            ]
+        ];
 
-        // محاولة decode
-        $decoded = json_decode($text, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            return $decoded;
+        return $translations[$type][$text] ?? $text;
+    }
+
+    /**
+     * جلب وصفات عالمية (إنجليزي)
+     */
+    private function fetchInternationalRecipes()
+    {
+        try {
+            Log::info("Fetching international recipes");
+
+            $categories = ['Beef', 'Chicken', 'Seafood', 'Pasta', 'Dessert', 'Vegetarian'];
+
+            $allRecipes = [];
+
+            $responses = Http::pool(
+                fn(Pool $pool) =>
+                collect($categories)->map(
+                    fn($cat) =>
+                    $pool->timeout(6)->get("https://www.themealdb.com/api/json/v1/1/filter.php?c={$cat}")
+                )->toArray()
+            );
+
+            foreach ($responses as $response) {
+                if ($response->successful()) {
+                    $meals = $response->json('meals', []);
+                    if (!empty($meals)) {
+                        $allRecipes = array_merge($allRecipes, $meals);
+                    }
+                }
+            }
+
+            if (empty($allRecipes)) {
+                return [];
+            }
+
+            $selectedRecipes = collect($allRecipes)
+                ->shuffle()
+                ->take(10)
+                ->toArray();
+
+            return $this->fetchFullRecipeDetailsEnglish($selectedRecipes);
+        } catch (\Exception $e) {
+            Log::error("Error: " . $e->getMessage());
+            return [];
         }
+    }
 
-        // استخراج array
-        if (preg_match('/\[[\s\S]*\]/s', $text, $matches)) {
-            $decoded = json_decode($matches[0], true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                return $decoded;
+    /**
+     * جلب التفاصيل (إنجليزي)
+     */
+    private function fetchFullRecipeDetailsEnglish(array $basicRecipes)
+    {
+        try {
+            $ids = collect($basicRecipes)->pluck('idMeal')->filter()->toArray();
+
+            if (empty($ids)) {
+                return [];
+            }
+
+            $responses = Http::pool(
+                fn(Pool $pool) =>
+                collect($ids)->map(
+                    fn($id) =>
+                    $pool->timeout(6)->get("https://www.themealdb.com/api/json/v1/1/lookup.php?i={$id}")
+                )->toArray()
+            );
+
+            $finalRecipes = [];
+
+            foreach ($responses as $response) {
+                if ($response->successful()) {
+                    $meal = $response->json('meals.0');
+
+                    if ($meal && $this->isHalal($meal)) {
+                        $meal['ingredients'] = $this->extractIngredients($meal);
+                        $finalRecipes[] = $meal;
+
+                        if (count($finalRecipes) >= 10) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return $finalRecipes;
+        } catch (\Exception $e) {
+            Log::error("Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * فحص الحلال
+     */
+    private function isHalal($meal)
+    {
+        $forbidden = [
+            'pork',
+            'bacon',
+            'ham',
+            'lard',
+            'pancetta',
+            'prosciutto',
+            'wine',
+            'beer',
+            'alcohol',
+            'rum',
+            'vodka',
+            'whiskey',
+            'sake',
+            'liqueur',
+            'sherry',
+            'brandy'
+        ];
+
+        $mealText = strtolower(json_encode($meal));
+
+        foreach ($forbidden as $word) {
+            if (strpos($mealText, $word) !== false) {
+                return false;
             }
         }
 
-        Log::error("Failed to parse JSON");
-        return [];
+        return true;
+    }
+
+    /**
+     * استخراج المكونات
+     */
+    private function extractIngredients($meal)
+    {
+        $ingredients = [];
+
+        for ($i = 1; $i <= 20; $i++) {
+            $ingredient = $meal["strIngredient{$i}"] ?? null;
+            $measure = $meal["strMeasure{$i}"] ?? null;
+
+            if (!empty($ingredient) && trim($ingredient) !== '') {
+                $ingredients[] = trim($measure . ' ' . $ingredient);
+            }
+        }
+
+        return $ingredients;
     }
 
     /**
@@ -428,34 +446,37 @@ class HomePageController extends Controller
     private function getFallbackRecipes($lang)
     {
         try {
-            Log::info("Loading fallback recipes");
-
-            $responses = Http::pool(fn (Pool $pool) => 
-                collect(range(1, 6))->map(fn() => 
+            $responses = Http::pool(
+                fn(Pool $pool) =>
+                collect(range(1, 12))->map(
+                    fn() =>
                     $pool->timeout(5)->get('https://www.themealdb.com/api/json/v1/1/random.php')
                 )->toArray()
             );
 
-            $fallbackRecipes = [];
+            $recipes = [];
 
             foreach ($responses as $response) {
                 if ($response->successful()) {
                     $meal = $response->json('meals.0');
 
-                    if ($meal) {
-                        if ($lang === 'ar') {
-                            $meal = $this->addArabicTranslations($meal);
-                        }
-                        
+                    if ($meal && $this->isHalal($meal)) {
                         $meal['ingredients'] = $this->extractIngredients($meal);
-                        $fallbackRecipes[] = $meal;
+
+                        if ($lang === 'ar') {
+                            $meal = $this->translateMealToArabicRealTime($meal);
+                        }
+
+                        $recipes[] = $meal;
+
+                        if (count($recipes) >= 8) {
+                            break;
+                        }
                     }
                 }
             }
 
-            Log::info("Fallback recipes loaded", ['count' => count($fallbackRecipes)]);
-            return $fallbackRecipes;
-
+            return $recipes;
         } catch (\Exception $e) {
             Log::error("Fallback failed: " . $e->getMessage());
             return [];
@@ -463,31 +484,17 @@ class HomePageController extends Controller
     }
 
     /**
-     * حذف الـ cache
+     * حذف Cache
      */
     public function clearCache(Request $request)
     {
         try {
-            $lang = $request->query('lang');
-            
-            if ($lang) {
-                // حذف لغة معينة
-                Cache::forget("trending_recipes_{$lang}");
-                Cache::forget("random_recipes_{$lang}");
-                Log::info("Cache cleared for language: {$lang}");
-            } else {
-                // حذف كل شيء
-                Cache::forget('trending_recipes_ar');
-                Cache::forget('trending_recipes_en');
-                Cache::forget('random_recipes_ar');
-                Cache::forget('random_recipes_en');
-                Log::info("All recipes cache cleared");
-            }
-            
-            return response()->json(['message' => 'Cache cleared successfully'], 200);
+            Cache::forget('trending_halal_recipes_ar');
+            Cache::forget('trending_halal_recipes_en');
+
+            return response()->json(['message' => 'Cache cleared'], 200);
         } catch (\Exception $e) {
-            Log::error("Error clearing cache: " . $e->getMessage());
-            return response()->json(['error' => 'Failed to clear cache'], 500);
+            return response()->json(['error' => 'Failed'], 500);
         }
     }
 }

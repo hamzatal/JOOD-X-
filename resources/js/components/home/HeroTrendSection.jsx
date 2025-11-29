@@ -84,7 +84,7 @@ export default function HeroTrendSection() {
 
         const id = setInterval(() => {
             setActiveIndex((i) => (i + 1) % trending.length);
-        }, 6000);
+        }, 9000); 
 
         return () => clearInterval(id);
     }, [trending.length, isPaused]);
@@ -128,15 +128,18 @@ export default function HeroTrendSection() {
         );
     }
 
-    // Display Arabic if available, otherwise English
+    // FIXED: Proper fallback logic
     const displayTitle =
         lang === "ar" && meal.strMealAr ? meal.strMealAr : meal.strMeal;
+
     const displayCategory =
         lang === "ar" && meal.strCategoryAr
             ? meal.strCategoryAr
             : meal.strCategory;
+
     const displayArea =
         lang === "ar" && meal.strAreaAr ? meal.strAreaAr : meal.strArea;
+
     const displayInstructions =
         lang === "ar" && meal.strInstructionsAr
             ? meal.strInstructionsAr
@@ -152,7 +155,7 @@ export default function HeroTrendSection() {
 
             <div className="max-w-7xl mx-auto relative z-10">
                 <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
-                    {/* Content Side - Changes order based on language */}
+                    {/* Content Side */}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={`content-${activeIndex}`}
@@ -167,41 +170,30 @@ export default function HeroTrendSection() {
                             }`}
                         >
                             <div
-                                className={`flex items-center gap-2 flex-wrap ${
+                                className={`flex items-center gap-3 flex-wrap ${
                                     lang === "ar"
                                         ? "justify-end"
                                         : "justify-start"
                                 }`}
                             >
-                                {/* Header with badges and refresh button */}
-                                <div
-                                    className={`flex items-center gap-3 flex-wrap ${
-                                        lang === "ar"
-                                            ? "justify-end"
-                                            : "justify-start"
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={handleRefresh}
+                                    disabled={refreshing}
+                                    className={`flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
+                                        lang === "ar" ? "mr-auto" : "ml-auto"
                                     }`}
                                 >
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={handleRefresh}
-                                        disabled={refreshing}
-                                        className={`flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
-                                            lang === "ar"
-                                                ? "mr-auto"
-                                                : "ml-auto"
+                                    <RefreshCw
+                                        className={`w-4 h-4 text-white ${
+                                            refreshing ? "animate-spin" : ""
                                         }`}
-                                    >
-                                        <RefreshCw
-                                            className={`w-4 h-4 text-white ${
-                                                refreshing ? "animate-spin" : ""
-                                            }`}
-                                        />
-                                        <span className="text-xs font-semibold text-white">
-                                            {t("وصفات جديدة !", "New Recipes!")}
-                                        </span>
-                                    </motion.button>
-                                </div>
+                                    />
+                                    <span className="text-xs font-semibold text-white">
+                                        {t("وصفات جديدة !", "New Recipes!")}
+                                    </span>
+                                </motion.button>
 
                                 <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600/20 to-amber-600/20 px-3 py-1.5 rounded-full text-sm text-green-300 border border-green-500/30">
                                     <Star className="w-4 h-4" />
@@ -216,6 +208,7 @@ export default function HeroTrendSection() {
                                 {displayTitle}
                             </h1>
 
+                            {/* FIXED: Proper spacing between badges */}
                             <div
                                 className={`flex gap-3 flex-wrap ${
                                     lang === "ar"
@@ -223,13 +216,13 @@ export default function HeroTrendSection() {
                                         : "justify-start"
                                 }`}
                             >
-                                <span className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/70 rounded-full border border-gray-700 text-sm">
+                                <span className="flex items-center gap-2 px-4 py-2 bg-gray-800/70 rounded-full border border-gray-700 text-sm text-gray-200">
                                     <ChefHat className="w-4 h-4 text-green-400" />
-                                    {displayCategory}
+                                    <span>{displayCategory}</span>
                                 </span>
-                                <span className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/70 rounded-full border border-gray-700 text-sm">
+                                <span className="flex items-center gap-2 px-4 py-2 bg-gray-800/70 rounded-full border border-gray-700 text-sm text-gray-200">
                                     <Globe className="w-4 h-4 text-amber-400" />
-                                    {displayArea}
+                                    <span>{displayArea}</span>
                                 </span>
                             </div>
 
@@ -263,7 +256,7 @@ export default function HeroTrendSection() {
                                 </motion.button>
                             </div>
 
-                            {/* Thumbnails carousel - FIXED */}
+                            {/* Thumbnails carousel */}
                             <div className="relative mt-10 w-full">
                                 <button
                                     onClick={() =>
@@ -304,10 +297,7 @@ export default function HeroTrendSection() {
                                 <div className="overflow-hidden px-11">
                                     <div className="flex gap-3">
                                         {trending.map((item, idx) => {
-                                            // Calculate position relative to activeIndex
                                             let offset = idx - activeIndex;
-
-                                            // Show only visible items based on screen size
                                             const isVisible =
                                                 Math.abs(offset) < visibleCount;
 
@@ -341,7 +331,7 @@ export default function HeroTrendSection() {
                         </motion.div>
                     </AnimatePresence>
 
-                    {/* Image Side - Changes order based on language */}
+                    {/* Image Side */}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={`image-${activeIndex}`}
@@ -383,19 +373,21 @@ export default function HeroTrendSection() {
                                         <h3 className="text-xl font-bold text-white mb-2">
                                             {displayTitle}
                                         </h3>
+                                        {/* FIXED: Better layout with proper spacing */}
                                         <div
-                                            className={`flex items-center gap-3 text-sm text-gray-300 ${
+                                            className={`flex items-center gap-4 text-sm text-gray-200 ${
                                                 lang === "ar"
                                                     ? "justify-end"
                                                     : "justify-start"
                                             }`}
                                         >
-                                            <div className="flex items-center gap-1">
-                                                <ChefHat className="w-4 h-4" />
+                                            <div className="flex items-center gap-1.5">
+                                                <ChefHat className="w-4 h-4 text-green-400" />
                                                 <span>{displayCategory}</span>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <Globe className="w-4 h-4" />
+                                            <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
+                                            <div className="flex items-center gap-1.5">
+                                                <Globe className="w-4 h-4 text-amber-400" />
                                                 <span>{displayArea}</span>
                                             </div>
                                         </div>
