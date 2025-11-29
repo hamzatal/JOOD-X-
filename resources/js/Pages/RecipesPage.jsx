@@ -34,7 +34,7 @@ export default function RecipesPage() {
     const [searching, setSearching] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState("all");
 
-    const recipesPerPage = 12;
+    const recipesPerPage = 10;
     const isRTL = lang === "ar";
 
     // ✅ Mapping بين الاسم الظاهر والـ API
@@ -485,8 +485,8 @@ export default function RecipesPage() {
             <section className="px-4 md:px-8 py-8">
                 <div className="max-w-7xl mx-auto">
                     {loading ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                            {[...Array(12)].map((_, i) => (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {[...Array(10)].map((_, i) => (
                                 <div
                                     key={i}
                                     className="bg-gray-800/40 rounded-xl h-56 animate-pulse"
@@ -500,7 +500,7 @@ export default function RecipesPage() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"
+                                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
                             >
                                 {currentRecipes.map((recipe, i) => (
                                     <RecipeCard
