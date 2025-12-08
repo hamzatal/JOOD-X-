@@ -38,13 +38,11 @@ export default function MedicalRecipesPage() {
     const [isFirstLoad, setIsFirstLoad] = useState(true);
     const recipesRef = useRef(null);
 
-    // تحميل الحالات والنصائح
     useEffect(() => {
         loadConditions();
         loadNutritionTips();
     }, [selectedCondition, lang]);
 
-    // تحميل الوصفات المحفوظة فقط (بدون توليد تلقائي)
     useEffect(() => {
         if (selectedCondition) {
             loadRecipes(1);
@@ -74,7 +72,6 @@ export default function MedicalRecipesPage() {
                 setCurrentPage(page);
                 setIsFirstLoad(false);
             } else {
-                // عرض empty state فقط (بدون توليد تلقائي)
                 setRecipes([]);
                 setIsFirstLoad(false);
             }

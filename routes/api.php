@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\WhatToCookController;
 use App\Http\Controllers\Api\MedicalRecipesController;
 use App\Http\Controllers\Api\RandomRecipesController;
 use App\Http\Controllers\Api\RecipeController;
+use App\Http\Controllers\Api\MealPlannerController;
 
 
 /*
@@ -17,6 +18,14 @@ use App\Http\Controllers\Api\RecipeController;
 | Here is where you can register API routes for your application.
 |
 */
+
+
+// ============================================================================
+// MEAL PLANNER - AI Powered Weekly Meal Plans
+// ============================================================================
+
+Route::get('/meal-planner', [MealPlannerController::class, 'generate']);
+Route::get('/meal-planner/generate', [\App\Http\Controllers\Api\MealPlannerController::class, 'generate']);
 
 // ============================================================================
 // HOME & TRENDING RECIPES

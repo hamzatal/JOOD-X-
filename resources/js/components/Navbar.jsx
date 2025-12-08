@@ -18,6 +18,8 @@ import {
     IceCream,
     Grid,
     Beef as BeefIcon,
+    PlaneIcon,
+    ListCheckIcon,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -220,12 +222,15 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     </Link>
 
                     <Link
-                        href="/stores"
+                        href="/meal-planner"
                         className={`flex items-center gap-1.5 transition pb-1 ${
-                            isActive("/stores") ? activeClass : inactiveClass
+                            isActive("/meal-planner")
+                                ? activeClass
+                                : inactiveClass
                         }`}
                     >
-                        🛒 {t("المتاجر", "Stores")}
+                        <ListCheckIcon size={16} />{" "}
+                        {t(" مخطط الوجبات", "Meal Planner")}
                     </Link>
 
                     <Link
@@ -378,15 +383,16 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                         </Link>
 
                         <Link
-                            href="/stores"
+                            href="/meal-planner"
                             className={`flex items-center gap-2 p-3 rounded-lg transition ${
-                                isActive("/stores")
+                                isActive("/meal-planner")
                                     ? "bg-green-600 text-white"
                                     : "hover:bg-gray-800"
                             }`}
                             onClick={() => setOpen(false)}
                         >
-                            🛒 {t("المتاجر", "Stores")}
+                            <ListCheckIcon size={18} />{" "}
+                            {t("مخطط الوجبات", "Meal Planner")}
                         </Link>
 
                         <Link

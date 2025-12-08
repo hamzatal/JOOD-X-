@@ -5,6 +5,15 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+
+
+// ==============================
+// Meal Planner page (Inertia)
+// ==============================
+Route::get('/meal-planner', function () {
+    return Inertia::render('MealPlannerPage');
+});
+
 // ==============================
 // Home page
 // ==============================
