@@ -23,9 +23,7 @@ use App\Http\Controllers\Api\MealPlannerController;
 // ============================================================================
 // MEAL PLANNER - AI Powered Weekly Meal Plans
 // ============================================================================
-
-Route::get('/meal-planner', [MealPlannerController::class, 'generate']);
-Route::get('/meal-planner/generate', [\App\Http\Controllers\Api\MealPlannerController::class, 'generate']);
+Route::get('/meal-planner/generate', [MealPlannerController::class, 'generate']);
 
 // ============================================================================
 // HOME & TRENDING RECIPES
