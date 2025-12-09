@@ -1,7 +1,36 @@
-// components/meal-planner/ShoppingList.jsx
 import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { X, ShoppingCart, DollarSign, Download, Printer } from "lucide-react";
+
+const translateIngredient = (name, lang) => {
+    if (lang !== "ar") return name;
+
+    const map = {
+        chicken: "دجاج",
+        beef: "لحم بقري",
+        meat: "لحم",
+        rice: "أرز",
+        onion: "بصل",
+        garlic: "ثوم",
+        tomato: "طماطم",
+        salt: "ملح",
+        pepper: "فلفل",
+        oil: "زيت",
+        lemon: "ليمون",
+        butter: "زبدة",
+        cheese: "جبن",
+        milk: "حليب",
+        egg: "بيض",
+        flour: "طحين",
+        sugar: "سكر",
+    };
+
+    const lower = name.toLowerCase();
+    for (const key in map) {
+        if (lower.includes(key)) return map[key];
+    }
+    return name;
+};
 
 export default function ShoppingList({ plan, lang, onClose }) {
     const t = (ar, en) => (lang === "ar" ? ar : en);
@@ -15,9 +44,13 @@ export default function ShoppingList({ plan, lang, onClose }) {
                 const meal = day[mealType];
                 if (meal?.ingredients) {
                     meal.ingredients.forEach((ingredient) => {
-                        const key = ingredient.toLowerCase().trim();
+                        const translated = translateIngredient(
+                            ingredient,
+                            lang
+                        );
+                        const key = translated.toLowerCase().trim();
                         ingredientsMap.set(key, {
-                            name: ingredient,
+                            name: translated,
                             count: (ingredientsMap.get(key)?.count || 0) + 1,
                         });
                     });
@@ -34,7 +67,7 @@ export default function ShoppingList({ plan, lang, onClose }) {
             ),
             totalCost: cost.toFixed(2),
         };
-    }, [plan]);
+    }, [plan, lang]);
 
     const handlePrint = () => {
         window.print();
@@ -48,7 +81,8 @@ export default function ShoppingList({ plan, lang, onClose }) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "shopping-list.txt";
+        a.download =
+            lang === "ar" ? "قائمة-المشتريات.txt" : "shopping-list.txt";
         a.click();
     };
 
@@ -65,7 +99,7 @@ export default function ShoppingList({ plan, lang, onClose }) {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl border border-gray-700 shadow-2xl p-8"
+                className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl border border-gray-700 shadow-2xl p-8 custom-scrollbar"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">

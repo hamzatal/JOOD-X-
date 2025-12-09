@@ -1,4 +1,3 @@
-// components/meal-planner/NutritionSummary.jsx
 import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { X, PieChart, TrendingUp, Activity } from "lucide-react";
@@ -72,7 +71,7 @@ export default function NutritionSummary({ plan, lang, onClose }) {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl border border-gray-700 shadow-2xl p-8"
+                className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl border border-gray-700 shadow-2xl p-8 custom-scrollbar"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
@@ -241,7 +240,7 @@ function NutritionCard({ label, value, icon, color }) {
         <div
             className={`bg-gradient-to-br ${colorMap[color]} backdrop-blur-lg p-5 rounded-xl border text-center`}
         >
-            <div className="text-4xl mb-2">{icon}</div>
+            <div className="text-3xl mb-2">{icon}</div>
             <p className="text-2xl font-bold text-white mb-1">{value}</p>
             <p className="text-xs text-gray-400">{label}</p>
         </div>

@@ -24,7 +24,7 @@ export default function MealModal({ meal, onClose, lang = "en" }) {
 
     const [showFullInstructions, setShowFullInstructions] = useState(false);
 
-    // عرض العناوين (نفس منطق RecipeModal + دعم البيانات القادمة من API الحالي)
+    // العناوين
     const displayTitle =
         lang === "ar" && meal.strMealAr
             ? meal.strMealAr
@@ -37,19 +37,17 @@ export default function MealModal({ meal, onClose, lang = "en" }) {
         lang === "ar" && meal.strAreaAr
             ? meal.strAreaAr
             : meal.strArea || meal.area;
-
     const displayInstructions =
         lang === "ar" && meal.strInstructionsAr
             ? meal.strInstructionsAr
             : meal.strInstructions || meal.instructions || "";
 
-    // المكونات: نحاول أولاً من مصفوفة ingredients (من النورمالايز)،
-    // ولو غير متوفرة نستخدم strIngredient1..20 كما في RecipeModal
+    // المكونات: أولًا من مصفوفة ingredients، وإلا من strIngredient1..20
     let ingredients = [];
     if (Array.isArray(meal.ingredients) && meal.ingredients.length > 0) {
         ingredients = meal.ingredients.map((ing) => ({
             ingredient: ing,
-            measure: "", // القياس مدموج داخل النص أصلاً
+            measure: "",
         }));
     } else {
         ingredients = Array.from({ length: 20 }, (_, i) => {
@@ -146,7 +144,7 @@ export default function MealModal({ meal, onClose, lang = "en" }) {
                                 {displayTitle}
                             </h2>
 
-                            {/* سطر التغذية تحت العنوان */}
+                            {/* سطر التغذية */}
                             {meal.nutrition && (
                                 <div
                                     className={`mt-4 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs text-gray-300 ${

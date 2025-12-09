@@ -1,4 +1,3 @@
-// components/meal-planner/FilterBar.jsx
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -47,11 +46,16 @@ export default function FilterBar({
         },
     ];
 
+    const colorMap = {
+        green: "from-green-600 to-emerald-600",
+        purple: "from-purple-600 to-pink-600",
+        blue: "from-blue-600 to-cyan-600",
+    };
+
     return (
-        <section className="py-6 px-4 sticky top-20 z-40 bg-gradient-to-b from-gray-950/95 to-gray-900/95 backdrop-blur-xl border-b border-gray-800">
+        <section className="py-6 px-4 bg-gradient-to-b from-gray-950/95 to-gray-900/95 border-b border-gray-800">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-                    {/* Section Title */}
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl">
                             <Calendar size={24} className="text-white" />
@@ -66,21 +70,28 @@ export default function FilterBar({
                         </div>
                     </div>
 
-                    {/* Filters */}
                     <div className="flex items-center gap-3 flex-wrap justify-center">
                         <div className="flex items-center gap-2 bg-gray-800/80 px-2 py-2 rounded-xl border border-gray-700">
                             {filters.map((filter) => (
-                                <FilterButton
+                                <motion.button
                                     key={filter.id}
-                                    filter={filter}
-                                    active={filterDiet === filter.id}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={() => setFilterDiet(filter.id)}
-                                    lang={lang}
-                                />
+                                    className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${
+                                        filterDiet === filter.id
+                                            ? `bg-gradient-to-r ${
+                                                  colorMap[filter.color]
+                                              } text-white shadow-lg`
+                                            : "text-gray-400 hover:text-white"
+                                    }`}
+                                >
+                                    <filter.icon size={16} />
+                                    {filter.label}
+                                </motion.button>
                             ))}
                         </div>
 
-                        {/* Action Buttons */}
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -123,38 +134,12 @@ export default function FilterBar({
                                 className={refreshing ? "animate-spin" : ""}
                             />
                             {refreshing
-                                ? t("جاري...", "Loading...")
+                                ? t("جاري التحديث...", "Refreshing...")
                                 : t("تحديث", "Refresh")}
                         </motion.button>
                     </div>
                 </div>
             </div>
         </section>
-    );
-}
-
-function FilterButton({ filter, active, onClick, lang }) {
-    const colorMap = {
-        green: "from-green-600 to-emerald-600",
-        purple: "from-purple-600 to-pink-600",
-        blue: "from-blue-600 to-cyan-600",
-    };
-
-    return (
-        <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onClick}
-            className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${
-                active
-                    ? `bg-gradient-to-r ${
-                          colorMap[filter.color]
-                      } text-white shadow-lg`
-                    : "text-gray-400 hover:text-white"
-            }`}
-        >
-            <filter.icon size={16} />
-            {filter.label}
-        </motion.button>
     );
 }

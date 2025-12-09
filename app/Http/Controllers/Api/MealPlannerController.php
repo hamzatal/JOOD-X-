@@ -13,10 +13,9 @@ class MealPlannerController extends Controller
     public function generate(Request $request)
     {
         $lang = $request->query('lang', 'en') === 'ar' ? 'ar' : 'en';
-        $userPrefs = $request->input('prefs', []);
         $refresh = $request->query('refresh', 'false') === 'true';
 
-        $cacheKey = 'meal_planner_' . $lang . '_' . md5(json_encode($userPrefs));
+        $cacheKey = 'meal_planner_' . $lang;
 
         if (!$refresh && Cache::has($cacheKey)) {
             return response()->json([
@@ -26,28 +25,21 @@ class MealPlannerController extends Controller
             ]);
         }
 
-        // توليد خطة سريعة بناءً على اللغة
-        $fullPlan = $this->generateLocalizedPlan($lang);
+        $plan = $this->generateLocalizedPlan($lang);
 
-        Cache::put($cacheKey, $fullPlan, 21600);
+        Cache::put($cacheKey, $plan, 21600);
 
         return response()->json([
             'success' => true,
             'source' => 'api',
-            'plan' => $fullPlan,
+            'plan' => $plan,
         ]);
     }
 
-    /**
-     * توليد خطة وجبات حسب اللغة (عربي أو أجنبي)
-     */
     private function generateLocalizedPlan($lang)
     {
-        $fullPlan = [];
-
-        // وصفات عربية وأجنبية
         $arabicDishes = [
-            'breakfast' => ['فول مدمس', 'حمص بالطحينة', 'شكشوكة', 'منسف', 'فتة', 'لبنة بالزيت', 'معجنات'],
+            'breakfast' => ['فول مدمس', 'حمص بالطحينة', 'شكشوكة', 'لبنة بالزيت', 'معجنات'],
             'lunch' => ['مقلوبة', 'كبسة', 'مندي', 'مسخن', 'محشي', 'مجدرة', 'كفتة بالطحينة', 'ملوخية'],
             'dinner' => ['دجاج مشوي', 'سمك مقلي', 'كباب', 'شاورما', 'فتة دجاج', 'كوسا محشي', 'مسقعة'],
         ];
@@ -60,25 +52,34 @@ class MealPlannerController extends Controller
 
         $dishes = $lang === 'ar' ? $arabicDishes : $internationalDishes;
 
+        $fullPlan = [];
         for ($i = 1; $i <= 7; $i++) {
-            $day = $lang === 'ar' ? "اليوم {$i}" : "Day {$i}";
+            $dayLabel = $lang === 'ar' ? "اليوم {$i}" : "Day {$i}";
 
             $fullPlan[] = [
-                'day' => $day,
-                'breakfast' => $this->fetchMealByNameOrRandom($dishes['breakfast'][array_rand($dishes['breakfast'])], $lang),
-                'lunch' => $this->fetchMealByNameOrRandom($dishes['lunch'][array_rand($dishes['lunch'])], $lang),
-                'dinner' => $this->fetchMealByNameOrRandom($dishes['dinner'][array_rand($dishes['dinner'])], $lang),
+                'day' => $dayLabel,
+                'breakfast' => $this->fetchMealByNameOrFallback(
+                    $dishes['breakfast'][array_rand($dishes['breakfast'])],
+                    $lang
+                ),
+                'lunch' => $this->fetchMealByNameOrFallback(
+                    $dishes['lunch'][array_rand($dishes['lunch'])],
+                    $lang
+                ),
+                'dinner' => $this->fetchMealByNameOrFallback(
+                    $dishes['dinner'][array_rand($dishes['dinner'])],
+                    $lang
+                ),
             ];
         }
 
         return $fullPlan;
     }
 
-    private function fetchMealByNameOrRandom($dishName, $lang)
+    private function fetchMealByNameOrFallback($dishName, $lang)
     {
         try {
-            // محاولة البحث عن الطبق
-            $res = Http::timeout(5)->get('https://www.themealdb.com/api/json/v1/1/search.php', [
+            $res = Http::timeout(6)->get('https://www.themealdb.com/api/json/v1/1/search.php', [
                 's' => $dishName
             ]);
 
@@ -86,16 +87,14 @@ class MealPlannerController extends Controller
                 return $this->normalizeMealdb($res->json()['meals'][0]);
             }
 
-            // إذا لم يتم العثور، جرب وصفة عشوائية
-            $randomRes = Http::timeout(5)->get('https://www.themealdb.com/api/json/v1/1/random.php');
-            if ($randomRes->ok() && isset($randomRes->json()['meals'][0])) {
-                return $this->normalizeMealdb($randomRes->json()['meals'][0]);
+            $random = Http::timeout(5)->get('https://www.themealdb.com/api/json/v1/1/random.php');
+            if ($random->ok() && isset($random->json()['meals'][0])) {
+                return $this->normalizeMealdb($random->json()['meals'][0]);
             }
         } catch (\Exception $e) {
             Log::warning('TheMealDB error: ' . $e->getMessage());
         }
 
-        // آخر حل: وجبة افتراضية
         return $this->getFallbackMeal($dishName, $lang);
     }
 
@@ -127,7 +126,7 @@ class MealPlannerController extends Controller
             'youtube' => $m['strYoutube'] ?? null,
             'strYoutube' => $m['strYoutube'] ?? null,
             'strSource' => $m['strSource'] ?? null,
-            'source' => 'themealdb'
+            'source' => 'themealdb',
         ];
     }
 
@@ -158,7 +157,7 @@ class MealPlannerController extends Controller
             'youtube' => null,
             'strYoutube' => null,
             'strSource' => null,
-            'source' => 'fallback'
+            'source' => 'fallback',
         ];
     }
 }
