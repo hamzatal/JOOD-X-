@@ -241,7 +241,6 @@ export default function MealPlannerPage() {
                     ) : (
                         <div className="space-y-6">
                             {" "}
-                            {/* ⬅️ تغيير من grid إلى space-y */}
                             <AnimatePresence>
                                 {filteredPlan.map((day, idx) => (
                                     <DayCard
@@ -257,7 +256,6 @@ export default function MealPlannerPage() {
                     )}
                 </div>
             </section>
-            {/* ⬅️ إضافة قسم النصائح قبل الـ Footer */}
             <TipsSection lang={lang} />
             <Footer />
             <Footer />

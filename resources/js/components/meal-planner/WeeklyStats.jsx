@@ -40,7 +40,7 @@ export default function WeeklyStats({ plan, lang }) {
     }, [plan]);
 
     return (
-        <section className="py-8 px-4 -mt-8">
+        <section className="py-8 px-4 -mt-0">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     <StatCard
