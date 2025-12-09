@@ -30,12 +30,10 @@ export default function WeeklyStats({ plan, lang }) {
 
         return {
             totalCalories,
-            avgProtein:
-                mealCount > 0 ? Math.round(totalProtein / mealCount) : 0,
+            avgProtein: mealCount > 0 ? Math.round(totalProtein / mealCount) : 0,
             totalMeals: mealCount,
             totalCost: totalCost.toFixed(2),
-            avgCalories:
-                mealCount > 0 ? Math.round(totalCalories / mealCount) : 0,
+            avgCalories: mealCount > 0 ? Math.round(totalCalories / mealCount) : 0,
         };
     }, [plan]);
 
@@ -96,17 +94,7 @@ export default function WeeklyStats({ plan, lang }) {
     );
 }
 
-function StatCard({
-    icon: Icon,
-    label,
-    value,
-    subtitle,
-    gradient,
-    borderColor,
-    iconColor,
-    iconBg,
-    delay,
-}) {
+function StatCard({ icon: Icon, label, value, subtitle, gradient, borderColor, iconColor, iconBg, delay }) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -116,9 +104,7 @@ function StatCard({
         >
             <div className="flex items-center justify-between">
                 <div>
-                    <p className="text-sm mb-1 font-medium text-gray-300">
-                        {label}
-                    </p>
+                    <p className="text-sm mb-1 font-medium text-gray-300">{label}</p>
                     <p className="text-4xl font-bold text-white">{value}</p>
                     <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
                 </div>
