@@ -1,133 +1,404 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { useState } from "react";
 import {
-    Menu,
     X,
     ChefHat,
-    Home,
+    Globe,
     BookOpen,
-    Calendar,
-    ShoppingCart,
-    User,
+    Sparkles,
+    Share2,
+    Printer,
+    Flame,
+    Beef,
+    DollarSign,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
-export default function Navbar({ lang = "ar", onChangeLang }) {
-    const [isOpen, setIsOpen] = useState(false);
+const PLACEHOLDER_IMAGE =
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop";
+
+export default function MealModal({ meal, onClose, lang = "en" }) {
+    if (!meal) return null;
+
     const isRTL = lang === "ar";
     const t = (ar, en) => (lang === "ar" ? ar : en);
 
-    const menuItems = [
-        { icon: Home, label: t("الرئيسية", "Home"), href: "/" },
-        { icon: BookOpen, label: t("الوصفات", "Recipes"), href: "/recipes" },
-        {
-            icon: Calendar,
-            label: t("خطة الوجبات", "Meal Plan"),
-            href: "/meal-plan",
-        },
-        {
-            icon: ShoppingCart,
-            label: t("قائمة التسوق", "Shopping"),
-            href: "/shopping",
-        },
-    ];
+    const [showFullInstructions, setShowFullInstructions] = useState(false);
+
+    // عرض العناوين (نفس منطق RecipeModal + دعم البيانات القادمة من API الحالي)
+    const displayTitle =
+        lang === "ar" && meal.strMealAr
+            ? meal.strMealAr
+            : meal.strMeal || meal.name || "";
+    const displayCategory =
+        lang === "ar" && meal.strCategoryAr
+            ? meal.strCategoryAr
+            : meal.strCategory || meal.category;
+    const displayArea =
+        lang === "ar" && meal.strAreaAr
+            ? meal.strAreaAr
+            : meal.strArea || meal.area;
+
+    const displayInstructions =
+        lang === "ar" && meal.strInstructionsAr
+            ? meal.strInstructionsAr
+            : meal.strInstructions || meal.instructions || "";
+
+    // المكونات: نحاول أولاً من مصفوفة ingredients (من النورمالايز)،
+    // ولو غير متوفرة نستخدم strIngredient1..20 كما في RecipeModal
+    let ingredients = [];
+    if (Array.isArray(meal.ingredients) && meal.ingredients.length > 0) {
+        ingredients = meal.ingredients.map((ing) => ({
+            ingredient: ing,
+            measure: "", // القياس مدموج داخل النص أصلاً
+        }));
+    } else {
+        ingredients = Array.from({ length: 20 }, (_, i) => {
+            const ingredientEn = meal[`strIngredient${i + 1}`]?.trim();
+            const ingredientAr = meal[`strIngredient${i + 1}Ar`]?.trim();
+            const measure = meal[`strMeasure${i + 1}`]?.trim();
+            const ingredient =
+                lang === "ar" && ingredientAr ? ingredientAr : ingredientEn;
+            return { ingredient, measure };
+        }).filter((item) => item.ingredient);
+    }
+
+    const shouldShowButton =
+        displayInstructions && displayInstructions.length > 400;
+
+    const youtubeUrl = meal.strYoutube || meal.youtube || null;
+    const youtubeId = youtubeUrl
+        ? youtubeUrl.includes("v=")
+            ? youtubeUrl.split("v=")[1].split("&")[0]
+            : youtubeUrl.split("/").pop()
+        : null;
+
+    const image = meal.strMealThumb || meal.image || PLACEHOLDER_IMAGE;
+
+    const handleImageError = (e) => {
+        e.target.onerror = null;
+        e.target.src = PLACEHOLDER_IMAGE;
+    };
 
     return (
-        <nav className="sticky top-0 z-50 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 backdrop-blur-xl border-b border-gray-700/50 shadow-xl">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-20">
-                    {/* Logo */}
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className="flex items-center gap-3"
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: "spring", damping: 25 }}
+                className={`bg-gray-900 rounded-3xl shadow-2xl border border-gray-800 w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col lg:flex-row ${
+                    isRTL ? "lg:flex-row-reverse" : ""
+                }`}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Image section */}
+                <div className="relative flex-shrink-0">
+                    <img
+                        src={image}
+                        alt={displayTitle}
+                        onError={handleImageError}
+                        className="w-full h-64 lg:w-96 lg:h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    <div
+                        className={`absolute bottom-4 ${
+                            isRTL ? "right-4" : "left-4"
+                        } flex gap-2`}
                     >
-                        <div className="p-2 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl">
-                            <ChefHat size={28} className="text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                                {t("مكتبة الوصفات", "Recipe Library")}
-                            </h1>
-                            <p className="text-xs text-gray-400">
-                                {t("وصفات لذيذة وصحية", "Delicious & Healthy")}
-                            </p>
-                        </div>
-                    </motion.div>
-
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center gap-2">
-                        {menuItems.map((item, idx) => (
-                            <motion.a
-                                key={idx}
-                                href={item.href}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-gray-700/50 transition-all"
-                            >
-                                <item.icon size={18} />
-                                {item.label}
-                            </motion.a>
-                        ))}
-
-                        {/* Language Toggle */}
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() =>
-                                onChangeLang?.(lang === "ar" ? "en" : "ar")
-                            }
-                            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white font-semibold ml-2"
-                        >
-                            {lang === "ar" ? "EN" : "عربي"}
-                        </motion.button>
-
-                        {/* User Button */}
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 bg-gray-700/50 rounded-xl"
-                        >
-                            <User size={20} className="text-gray-300" />
-                        </motion.button>
+                        {displayCategory && (
+                            <span className="flex items-center gap-2 px-3 py-1.5 bg-green-600/90 backdrop-blur-sm rounded-full text-white text-sm font-semibold border border-green-500/50 shadow-lg">
+                                <ChefHat size={14} />
+                                {displayCategory}
+                            </span>
+                        )}
+                        {displayArea && (
+                            <span className="flex items-center gap-2 px-3 py-1.5 bg-amber-600/90 backdrop-blur-sm rounded-full text-white text-sm font-semibold border border-amber-500/50 shadow-lg">
+                                <Globe size={14} />
+                                {displayArea}
+                            </span>
+                        )}
                     </div>
-
-                    {/* Mobile Menu Button */}
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="md:hidden p-2 rounded-xl bg-gray-700/50 text-gray-300"
-                    >
-                        {isOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
                 </div>
 
-                {/* Mobile Menu */}
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="md:hidden py-4 space-y-2"
+                {/* Content section */}
+                <div
+                    className="flex-1 flex flex-col"
+                    dir={isRTL ? "rtl" : "ltr"}
+                >
+                    {/* Header */}
+                    <div
+                        className={`flex justify-between items-start p-6 pb-4 border-b border-gray-800 ${
+                            isRTL ? "flex-row-reverse" : ""
+                        }`}
                     >
-                        {menuItems.map((item, idx) => (
-                            <a
-                                key={idx}
-                                href={item.href}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 hover:bg-gray-700/50 transition-all"
+                        <div className={`flex-1 ${isRTL ? "pl-6" : "pr-6"}`}>
+                            <h2
+                                className={`text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-400 via-green-300 to-amber-400 bg-clip-text text-transparent leading-tight ${
+                                    isRTL ? "text-right" : "text-left"
+                                }`}
                             >
-                                <item.icon size={18} />
-                                {item.label}
-                            </a>
-                        ))}
-                        <button
-                            onClick={() =>
-                                onChangeLang?.(lang === "ar" ? "en" : "ar")
-                            }
-                            className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white font-semibold"
-                        >
-                            {lang === "ar" ? "English" : "العربية"}
-                        </button>
-                    </motion.div>
-                )}
-            </div>
-        </nav>
+                                {displayTitle}
+                            </h2>
+
+                            {/* سطر التغذية تحت العنوان */}
+                            {meal.nutrition && (
+                                <div
+                                    className={`mt-4 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs text-gray-300 ${
+                                        isRTL ? "text-right" : "text-left"
+                                    }`}
+                                >
+                                    <NutritionPill
+                                        icon={Flame}
+                                        label={t("سعرات", "Calories")}
+                                        value={meal.nutrition.calories}
+                                    />
+                                    <NutritionPill
+                                        icon={Beef}
+                                        label={t("بروتين", "Protein")}
+                                        value={`${meal.nutrition.protein}g`}
+                                    />
+                                    <NutritionPill
+                                        icon={ChefHat}
+                                        label={t("كارب", "Carbs")}
+                                        value={`${meal.nutrition.carbs}g`}
+                                    />
+                                    <NutritionPill
+                                        icon={ChefHat}
+                                        label={t("دهون", "Fat")}
+                                        value={`${meal.nutrition.fat}g`}
+                                    />
+                                    {meal.cost && (
+                                        <NutritionPill
+                                            icon={DollarSign}
+                                            label={t("التكلفة", "Cost")}
+                                            value={`${meal.cost} ${t(
+                                                "د.أ",
+                                                "JOD"
+                                            )}`}
+                                        />
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() =>
+                                    navigator
+                                        .share?.({
+                                            title: displayTitle,
+                                            text: displayInstructions?.substring(
+                                                0,
+                                                100
+                                            ),
+                                            url: window.location.href,
+                                        })
+                                        .catch(() => {})
+                                }
+                                className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white transition hover:scale-110"
+                                title={t("مشاركة", "Share")}
+                            >
+                                <Share2 size={20} />
+                            </button>
+                            <button
+                                onClick={() => window.print()}
+                                className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white transition hover:scale-110"
+                                title={t("طباعة", "Print")}
+                            >
+                                <Printer size={20} />
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="p-2.5 rounded-xl bg-gray-800/80 hover:bg-red-600/80 text-gray-400 hover:text-white transition hover:scale-110"
+                                title={t("إغلاق", "Close")}
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Scrollable content */}
+                    <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                        {/* Ingredients */}
+                        <div>
+                            <h3
+                                className={`text-xl font-bold text-amber-400 mb-4 flex items-center gap-3 ${
+                                    isRTL ? "flex-row-reverse" : ""
+                                }`}
+                            >
+                                <Sparkles size={22} />
+                                {t(
+                                    `المكونات (${ingredients.length})`,
+                                    `Ingredients (${ingredients.length})`
+                                )}
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {ingredients.map(
+                                    ({ ingredient, measure }, i) => (
+                                        <div
+                                            key={i}
+                                            className={`flex ${
+                                                isRTL
+                                                    ? "flex-row-reverse"
+                                                    : "flex-row"
+                                            } items-center justify-between p-3 bg-gray-800/60 rounded-xl border border-gray-700/50 hover:border-green-500/50 transition-all group`}
+                                        >
+                                            <div
+                                                className={`flex items-center gap-2 ${
+                                                    isRTL
+                                                        ? "flex-row-reverse"
+                                                        : ""
+                                                }`}
+                                            >
+                                                <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-amber-400 rounded-full group-hover:scale-150 transition" />
+                                                <span className="text-gray-200 font-medium text-sm">
+                                                    {ingredient}
+                                                </span>
+                                            </div>
+                                            {measure && (
+                                                <span className="text-green-400 font-semibold text-xs bg-green-900/40 px-2.5 py-1 rounded-lg">
+                                                    {measure}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Instructions */}
+                        <div>
+                            <h3
+                                className={`text-xl font-bold text-green-400 mb-4 flex items-center gap-3 ${
+                                    isRTL ? "flex-row-reverse" : ""
+                                }`}
+                            >
+                                <BookOpen size={22} />
+                                {t("طريقة التحضير", "Instructions")}
+                            </h3>
+
+                            <div
+                                className={`text-gray-300 leading-relaxed text-sm md:text-base whitespace-pre-line bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 ${
+                                    isRTL ? "text-right" : "text-left"
+                                }`}
+                            >
+                                <div
+                                    className={
+                                        showFullInstructions
+                                            ? ""
+                                            : "max-h-[300px] overflow-hidden relative"
+                                    }
+                                >
+                                    {displayInstructions ||
+                                        t(
+                                            "لا توجد تعليمات متاحة",
+                                            "No instructions available"
+                                        )}
+
+                                    {!showFullInstructions &&
+                                        shouldShowButton && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-gray-800 to-transparent"></div>
+                                        )}
+                                </div>
+
+                                {shouldShowButton && (
+                                    <div className="mt-4 flex justify-center">
+                                        <button
+                                            onClick={() =>
+                                                setShowFullInstructions(
+                                                    !showFullInstructions
+                                                )
+                                            }
+                                            className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                                        >
+                                            {showFullInstructions ? (
+                                                <>
+                                                    {t("عرض أقل", "Show Less")}
+                                                    <span className="text-lg">
+                                                        ▲
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {t(
+                                                        "عرض المزيد",
+                                                        "Show More"
+                                                    )}
+                                                    <span className="text-lg">
+                                                        ▼
+                                                    </span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Video */}
+                        {youtubeId && (
+                            <div>
+                                <h3
+                                    className={`text-xl font-bold text-red-400 mb-4 flex items-center gap-3 ${
+                                        isRTL ? "flex-row-reverse" : ""
+                                    }`}
+                                >
+                                    <svg
+                                        className="w-6 h-6"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                                    </svg>
+                                    {t("فيديو الوصفة", "Recipe Video")}
+                                </h3>
+                                <div className="aspect-video rounded-2xl overflow-hidden border-2 border-gray-700 shadow-xl">
+                                    <iframe
+                                        src={`https://www.youtube.com/embed/${youtubeId}`}
+                                        className="w-full h-full"
+                                        allowFullScreen
+                                        title="Recipe Video"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </motion.div>
+
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(31, 41, 55, 0.5);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: linear-gradient(180deg, #10b981, #059669);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(180deg, #059669, #047857);
+                }
+            `}</style>
+        </motion.div>
+    );
+}
+
+function NutritionPill({ icon: Icon, label, value }) {
+    return (
+        <div className="flex items-center gap-1 px-2 py-1 bg-gray-800/70 rounded-full border border-gray-700">
+            <Icon size={14} className="text-green-400" />
+            <span className="text-[11px] text-gray-200">{label}:</span>
+            <span className="text-[11px] text-white font-semibold">
+                {value}
+            </span>
+        </div>
     );
 }
