@@ -8,6 +8,14 @@ use Inertia\Inertia;
 
 
 // ==============================
+// KIDS MEALS - Kid-Friendly Recipes
+// ==============================
+Route::get('/kids-meals', function () {
+    return Inertia::render('KidsMealsPage');
+})->name('kids-meals');
+
+
+// ==============================
 // Meal Planner page (Inertia)
 // ==============================
 Route::get('/meal-planner', function () {

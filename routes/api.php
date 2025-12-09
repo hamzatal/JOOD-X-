@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\MedicalRecipesController;
 use App\Http\Controllers\Api\RandomRecipesController;
 use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\MealPlannerController;
+use App\Http\Controllers\Api\KidsMealsController;
 
 
 /*
@@ -18,6 +19,13 @@ use App\Http\Controllers\Api\MealPlannerController;
 | Here is where you can register API routes for your application.
 |
 */
+
+
+
+// ============================================================================
+// KIDS MEALS - Kid-Friendly Recipes
+// ============================================================================
+Route::get('/kids-meals', [KidsMealsController::class, 'index']);
 
 
 // ============================================================================

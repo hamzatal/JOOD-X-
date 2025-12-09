@@ -20,6 +20,7 @@ import {
     Beef as BeefIcon,
     PlaneIcon,
     ListCheckIcon,
+    BabyIcon,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -123,7 +124,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     >
                         <Home size={16} /> {t("الرئيسية", "Home")}
                     </Link>
-
                     <Link
                         href="/what-to-cook"
                         className={`flex items-center gap-1.5 transition pb-1 whitespace-nowrap ${
@@ -134,7 +134,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     >
                         <Lightbulb size={16} /> {t("شو اطبخ؟", "What to Cook?")}
                     </Link>
-
                     <div
                         className="relative"
                         onMouseEnter={handleMouseEnter}
@@ -208,7 +207,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                             </div>
                         )}
                     </div>
-
                     <Link
                         href="/medical-recipes"
                         className={`flex items-center gap-1.5 transition pb-1 whitespace-nowrap ${
@@ -220,7 +218,6 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                         <HeartPulseIcon size={16} />{" "}
                         {t("وصفات صحية", "Healthy")}
                     </Link>
-
                     <Link
                         href="/meal-planner"
                         className={`flex items-center gap-1.5 transition pb-1 ${
@@ -231,6 +228,17 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     >
                         <ListCheckIcon size={16} />{" "}
                         {t(" مخطط الوجبات", "Meal Planner")}
+                    </Link>
+                    <Link
+                        href="/kids-meals"
+                        className={`flex items-center gap-1.5 transition pb-1 ${
+                            isActive("/kids-meals")
+                                ? activeClass
+                                : inactiveClass
+                        }`}
+                    >
+                        <BabyIcon size={16} />{" "}
+                        {t("وجبات الأطفال", "Kids Meals")}
                     </Link>
 
                     <Link
