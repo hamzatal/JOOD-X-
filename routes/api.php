@@ -15,18 +15,16 @@ use App\Http\Controllers\Api\KidsMealsController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application.
-|
 */
-
 
 
 // ============================================================================
 // KIDS MEALS - Kid-Friendly Recipes
 // ============================================================================
-Route::get('/kids-meals', [KidsMealsController::class, 'index']);
-
+Route::prefix('kids-meals')->group(function () {
+    Route::get('/', [KidsMealsController::class, 'index']);
+    Route::get('/tips', [KidsMealsController::class, 'getTips']);
+});
 
 // ============================================================================
 // MEAL PLANNER - AI Powered Weekly Meal Plans
