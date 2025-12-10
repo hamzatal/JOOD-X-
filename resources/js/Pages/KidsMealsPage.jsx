@@ -21,19 +21,26 @@ export default function KidsMealsPage() {
 
     const t = (ar, en) => (lang === "ar" ? ar : en);
 
-    const fetchMeals = async (force = false, category = "all") => {
+    const fetchMeals = async (force = false, category = activeCategory) => {
         try {
             if (force) setRefreshing(true);
             else setLoading(true);
 
+            // إرسال اللغة والفئة بشكل صحيح
             const res = await fetch(
                 `/api/kids-meals?lang=${lang}&refresh=${force}&category=${category}`
             );
             const data = await res.json();
 
-            setMeals(data.recipes || []);
+            if (data.recipes && Array.isArray(data.recipes)) {
+                setMeals(data.recipes);
+            } else {
+                console.error("Invalid response format:", data);
+                setMeals([]);
+            }
         } catch (e) {
             console.error("Failed to fetch meals:", e);
+            setMeals([]);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -46,8 +53,8 @@ export default function KidsMealsPage() {
             const res = await fetch(`/api/kids-meals/tips?lang=${lang}`);
             const data = await res.json();
 
-            if (data.success) {
-                setTips(data.tips || []);
+            if (data.success && data.tips) {
+                setTips(data.tips);
             }
         } catch (e) {
             console.error("Failed to fetch tips:", e);
@@ -56,6 +63,7 @@ export default function KidsMealsPage() {
         }
     };
 
+    // تحديث البيانات عند تغيير اللغة أو الفئة
     useEffect(() => {
         fetchMeals(false, activeCategory);
         fetchTips();
@@ -74,7 +82,7 @@ export default function KidsMealsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-950 text-gray-200">
+        <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-gray-200">
             <Navbar lang={lang} setLang={setLang} />
 
             <KidsHero
@@ -83,7 +91,7 @@ export default function KidsMealsPage() {
                 refreshing={refreshing}
             />
 
-            <main className="max-w-7xl mx-auto p-6">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
                 {/* الفلاتر */}
                 <KidsFilters
                     lang={lang}
@@ -93,13 +101,13 @@ export default function KidsMealsPage() {
 
                 {/* العنوان */}
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-                    <h2 className="text-3xl font-black bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                    <h2 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
                         {t(
                             "🌟 وصفات الأطفال المميزة",
                             "🌟 Featured Kids Recipes"
                         )}
                     </h2>
-                    <div className="text-sm text-gray-400 bg-gray-900/60 px-4 py-2 rounded-full border border-green-700/30">
+                    <div className="text-sm text-gray-400 bg-gray-900/80 px-4 py-2 rounded-full border border-green-600/40 backdrop-blur-sm">
                         {meals.length} {t("وصفة", "recipes")}
                     </div>
                 </div>
@@ -110,7 +118,7 @@ export default function KidsMealsPage() {
                         {[...Array(12)].map((_, i) => (
                             <div
                                 key={i}
-                                className="h-80 bg-gray-800/50 rounded-3xl animate-pulse"
+                                className="h-96 bg-gray-800/50 rounded-3xl animate-pulse border border-gray-700/50"
                             />
                         ))}
                     </div>
@@ -118,6 +126,7 @@ export default function KidsMealsPage() {
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5 }}
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     >
                         {meals.length === 0 ? (
@@ -132,11 +141,19 @@ export default function KidsMealsPage() {
                                         "No recipes available"
                                     )}
                                 </p>
+                                <button
+                                    onClick={() =>
+                                        fetchMeals(true, activeCategory)
+                                    }
+                                    className="mt-6 px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full font-bold hover:from-green-700 hover:to-emerald-700 transition"
+                                >
+                                    {t("🔄 جرب مرة أخرى", "🔄 Try Again")}
+                                </button>
                             </div>
                         ) : (
-                            meals.map((meal) => (
+                            meals.map((meal, index) => (
                                 <KidsMealCard
-                                    key={meal.id}
+                                    key={meal.id || index}
                                     meal={meal}
                                     lang={lang}
                                     onOpen={() => openModal(meal)}
@@ -147,10 +164,13 @@ export default function KidsMealsPage() {
                 )}
 
                 {/* النصائح */}
-                <section className="mt-16 mb-12 bg-gradient-to-br from-green-900/40 via-emerald-900/40 to-teal-900/40 p-8 rounded-3xl border-2 border-green-500/30 shadow-xl">
+                <section className="mt-16 mb-12 bg-gradient-to-br from-green-900/30 via-emerald-900/30 to-teal-900/30 p-6 sm:p-8 rounded-3xl border-2 border-green-500/30 shadow-2xl backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-6">
-                        <Apple size={32} className="text-green-400" />
-                        <h3 className="text-3xl font-black bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                        <Apple
+                            size={32}
+                            className="text-green-400 flex-shrink-0"
+                        />
+                        <h3 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
                             {t(
                                 "🍎 نصائح تغذية الأطفال",
                                 "🍎 Kids Nutrition Tips"
@@ -175,7 +195,7 @@ export default function KidsMealsPage() {
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="flex items-start gap-3 p-4 bg-gray-900/60 rounded-xl border border-green-700/30 hover:border-green-500/50 transition group"
+                                    className="flex items-start gap-3 p-4 bg-gray-900/70 rounded-xl border border-green-700/40 hover:border-green-500/60 transition-all group hover:shadow-lg hover:shadow-green-500/20"
                                 >
                                     <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center font-bold text-white shadow-lg group-hover:scale-110 transition">
                                         {i + 1}
@@ -224,8 +244,8 @@ export default function KidsMealsPage() {
                             key={i}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            className="p-6 bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-2xl border border-green-700/30 hover:border-green-500/50 transition group"
+                            transition={{ delay: i * 0.15 }}
+                            className="p-6 bg-gradient-to-br from-gray-900/70 to-gray-800/70 rounded-2xl border border-green-700/40 hover:border-green-500/60 transition-all group hover:shadow-xl hover:shadow-green-500/20"
                         >
                             <div
                                 className={`w-16 h-16 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition shadow-lg`}
@@ -235,7 +255,9 @@ export default function KidsMealsPage() {
                             <h4 className="text-xl font-bold text-white mb-2">
                                 {item.title}
                             </h4>
-                            <p className="text-gray-400 text-sm">{item.desc}</p>
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                {item.desc}
+                            </p>
                         </motion.div>
                     ))}
                 </section>
