@@ -18,13 +18,13 @@ use App\Http\Controllers\Api\KidsMealsController;
 */
 
 
+Route::get('/kids-meals', [KidsMealsController::class, 'index']);
+Route::get('/kids-meals/tips', [KidsMealsController::class, 'getTips']);
+
+
 // ============================================================================
 // KIDS MEALS - Kid-Friendly Recipes
 // ============================================================================
-Route::prefix('kids-meals')->group(function () {
-    Route::get('/', [KidsMealsController::class, 'index']);
-    Route::get('/tips', [KidsMealsController::class, 'getTips']);
-});
 
 // ============================================================================
 // MEAL PLANNER - AI Powered Weekly Meal Plans
