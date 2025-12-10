@@ -15,7 +15,8 @@ class MealPlannerController extends Controller
         $lang = $request->query('lang', 'en') === 'ar' ? 'ar' : 'en';
         $refresh = $request->query('refresh', 'false') === 'true';
 
-        $cacheKey = 'meal_planner_' . $lang;
+        // غيرت الاسم لمسح الكاش القديم
+        $cacheKey = 'meal_planner_v3_' . $lang;
 
         if (!$refresh && Cache::has($cacheKey)) {
             return response()->json([
@@ -84,12 +85,12 @@ class MealPlannerController extends Controller
             ]);
 
             if ($res->ok() && isset($res->json()['meals']) && $res->json()['meals']) {
-                return $this->normalizeMealdb($res->json()['meals'][0]);
+                return $this->normalizeMealdb($res->json()['meals'][0], $lang, $dishName);
             }
 
             $random = Http::timeout(5)->get('https://www.themealdb.com/api/json/v1/1/random.php');
             if ($random->ok() && isset($random->json()['meals'][0])) {
-                return $this->normalizeMealdb($random->json()['meals'][0]);
+                return $this->normalizeMealdb($random->json()['meals'][0], $lang, $dishName);
             }
         } catch (\Exception $e) {
             Log::warning('TheMealDB error: ' . $e->getMessage());
@@ -98,7 +99,7 @@ class MealPlannerController extends Controller
         return $this->getFallbackMeal($dishName, $lang);
     }
 
-    private function normalizeMealdb(array $m)
+    private function normalizeMealdb(array $m, $lang = 'en', $overrideName = null)
     {
         $ings = [];
         for ($i = 1; $i <= 20; $i++) {
@@ -109,16 +110,23 @@ class MealPlannerController extends Controller
             }
         }
 
+        $nameEn = $m['strMeal'] ?? 'Delicious Meal';
+        $finalName = $lang === 'ar'
+            ? ($overrideName ?: $nameEn)   // اسم الطبق العربي من قائمتك
+            : $nameEn;
+
         return [
             'id' => $m['idMeal'] ?? uniqid(),
             'idMeal' => $m['idMeal'] ?? uniqid(),
-            'name' => $m['strMeal'] ?? 'Delicious Meal',
-            'strMeal' => $m['strMeal'] ?? 'Delicious Meal',
+            'name' => $finalName,
+            'strMeal' => $finalName,
+            'strMealAr' => $lang === 'ar' ? $finalName : null,
             'image' => $m['strMealThumb'] ?? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop',
             'strMealThumb' => $m['strMealThumb'] ?? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop',
             'ingredients' => $ings,
             'instructions' => $m['strInstructions'] ?? 'Cook with love and enjoy!',
             'strInstructions' => $m['strInstructions'] ?? 'Cook with love and enjoy!',
+            'strInstructionsAr' => null,
             'category' => $m['strCategory'] ?? 'Main Course',
             'strCategory' => $m['strCategory'] ?? 'Main Course',
             'area' => $m['strArea'] ?? 'International',
@@ -137,6 +145,7 @@ class MealPlannerController extends Controller
             'idMeal' => uniqid(),
             'name' => $dishName,
             'strMeal' => $dishName,
+            'strMealAr' => $lang === 'ar' ? $dishName : null,
             'image' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop',
             'strMealThumb' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=600&fit=crop',
             'ingredients' => [
@@ -150,6 +159,9 @@ class MealPlannerController extends Controller
             'strInstructions' => $lang === 'ar'
                 ? 'طريقة تحضير سهلة ولذيذة. استمتع بوجبتك!'
                 : 'Easy and delicious preparation. Enjoy your meal!',
+            'strInstructionsAr' => $lang === 'ar'
+                ? 'طريقة تحضير سهلة ولذيذة. استمتع بوجبتك!'
+                : null,
             'category' => $lang === 'ar' ? 'طبق رئيسي' : 'Main Course',
             'strCategory' => $lang === 'ar' ? 'طبق رئيسي' : 'Main Course',
             'area' => $lang === 'ar' ? 'عربي' : 'Arabic',
