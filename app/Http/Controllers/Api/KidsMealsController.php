@@ -138,30 +138,27 @@ class KidsMealsController extends Controller
         }
     }
 
-private function buildPrompt($lang, $category)
-{
-    $cat = [
-        'breakfast' => $lang === 'ar' ? 'فطور' : 'breakfast',
-        'lunch'     => $lang === 'ar' ? 'غداء' : 'lunch',
-        'dinner'    => $lang === 'ar' ? 'عشاء' : 'dinner',
-        'snack'     => $lang === 'ar' ? 'سناك' : 'snack',
-        'all'       => $lang === 'ar' ? 'متنوعة' : 'varied'
-    ][$category] ?? 'varied';
+    private function buildPrompt($lang, $category)
+    {
+        $cat = [
+            'breakfast' => $lang === 'ar' ? 'فطور' : 'breakfast',
+            'lunch'     => $lang === 'ar' ? 'غداء' : 'lunch',
+            'dinner'    => $lang === 'ar' ? 'عشاء' : 'dinner',
+            'snack'     => $lang === 'ar' ? 'سناك' : 'snack',
+            'all'       => $lang === 'ar' ? 'متنوعة' : 'varied'
+        ][$category] ?? 'varied';
 
-    return $lang === 'ar'
-        ? "أعطني 8 وصفات {$cat} للأطفال (3-10 سنوات). 
-أرجع فقط JSON بدون أي نص إضافي.
-يجب أن يكون العدد 8 فقط.
-
-كل عنصر يجب أن يحتوي على:
+        return $lang === 'ar'
+            ? "أعطني **8 وصفات بالضبط** من فئة {$cat}.
+أعد فقط JSON بدون أي نص إضافي.
 
 [
  {
    \"title\": \"English Name\",
    \"titleAr\": \"اسم عربي واضح\",
-   \"description\": \"وصف قصير وجذاب\",
+   \"description\": \"وصف جذاب\",
    \"ingredients\": [\"مكون1\",\"مكون2\",\"مكون3\"],
-   \"instructions\": \"1. خطوة واضحة\\n2. خطوة تفصيلية\\n3. تابع شرح الخطوات بشكل مفصل (5–8 خطوات)\",
+   \"instructions\": \"1. خطوة مفصلة\\n2. خطوة ثانية\\n(6–12 خطوات)\",
    \"prepTime\": \"10\",
    \"cookTime\": \"20\",
    \"time\": \"30\",
@@ -169,18 +166,16 @@ private function buildPrompt($lang, $category)
    \"difficulty\": \"سهل\",
    \"calories\": \"200\",
    \"protein\": \"10g\",
-   \"benefits\": \"سطرين يشرحان فوائد الطبق للأطفال\",
+   \"benefits\": \"فقرة قصيرة من 2-3 أسطر\",
    \"kid_friendly_tip\": \"نصيحة ممتعة\",
    \"image_query\": \"food name\"
  }
 ]
 
-لا تضف أي نص خارج JSON."
-        : "Give me exactly 8 kid-friendly {$cat} recipes.
-
-Return ONLY a JSON array. No text outside JSON.
-
-Each item shape:
+❗ يجب أن يكون العدد 8 فقط."
+            :
+            "Give me **exactly 8 recipes** for {$cat} for kids.
+Return ONLY JSON.
 
 [
  {
@@ -188,7 +183,7 @@ Each item shape:
    \"titleAr\": \"Arabic Name\",
    \"description\": \"Short fun description\",
    \"ingredients\": [\"ing1\",\"ing2\",\"ing3\"],
-   \"instructions\": \"1. Clear step\\n2. Detailed step\\n3. Continue for 5–8 steps\",
+   \"instructions\": \"1. step\\n2. step\\n(6–12 steps)\",
    \"prepTime\": \"10\",
    \"cookTime\": \"20\",
    \"time\": \"30\",
@@ -196,15 +191,14 @@ Each item shape:
    \"difficulty\": \"easy\",
    \"calories\": \"200\",
    \"protein\": \"10g\",
-   \"benefits\": \"Two lines describing child benefits\",
+   \"benefits\": \"2–3 line paragraph\",
    \"kid_friendly_tip\": \"Tip\",
-   \"image_query\": \"english food name\"
+   \"image_query\": \"food name\"
  }
 ]
 
-MUST be exactly 8 items.";
-}
-
+❗ MUST return exactly 8 items.";
+    }
 
     private function extractJsonArray($text)
     {
