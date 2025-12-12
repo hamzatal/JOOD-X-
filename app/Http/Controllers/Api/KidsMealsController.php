@@ -17,147 +17,203 @@ class KidsMealsController extends Controller
             $lang = $request->query('lang', 'en') === 'ar' ? 'ar' : 'en';
             $refresh = $request->query('refresh', 'false') === 'true';
             $category = $request->query('category', 'all');
+            Log::info("Kids Meals Request", [
+                'lang' => $lang,
+                'category' => $category,
+                'refresh' => $refresh
+            ]);
 
-            Log::info("Kids Meals: lang={$lang}, category={$category}, refresh={$refresh}");
+            // مفتاح الكاش
+            $cacheKey = "kids_meals_{$lang}_{$category}";
+            $historyKey = "kids_meals_history_{$lang}_{$category}";
 
-            // Cache مختلف لكل لغة وكاتيجوري
-            $cacheKey = "kids_meals_{$lang}_{$category}_v4";
-
+            // مسح الكاش عند التحديث
             if ($refresh) {
                 Cache::forget($cacheKey);
                 Log::info("Cache cleared: {$cacheKey}");
             }
 
-            if (Cache::has($cacheKey)) {
-                Log::info("✓ Cache hit: {$cacheKey}");
-                return response()->json(['recipes' => Cache::get($cacheKey)]);
+            // استرجاع من الكاش إذا موجود
+            if (!$refresh && Cache::has($cacheKey)) {
+                Log::info("Serving from cache: {$cacheKey}");
+                return response()->json([
+                    'success' => true,
+                    'recipes' => Cache::get($cacheKey)
+                ]);
             }
 
+            // التحقق من وجود API key
             $apiKey = env('OPENAI_API_KEY');
             if (!$apiKey) {
-                return response()->json(['error' => 'API key missing', 'recipes' => []], 500);
+                Log::error('OpenAI API key is missing');
+                return response()->json([
+                    'success' => false,
+                    'error' => 'API configuration error',
+                    'recipes' => []
+                ], 500);
             }
 
-            // محاولتين
+            // جلب تاريخ الوصفات السابقة
+            $previousRecipes = Cache::get($historyKey, []);
+
+            // محاولة جلب الوصفات
             $recipes = null;
-            for ($attempt = 1; $attempt <= 2; $attempt++) {
-                Log::info("→ Attempt {$attempt}");
-
+            $lastError = null;
+            for ($attempt = 1; $attempt <= 3; $attempt++) {
+                Log::info("Attempt {$attempt} to generate recipes");
                 try {
-                    $recipes = $this->callOpenAI($apiKey, $lang, $category);
-
-                    if ($recipes && count($recipes) >= 6) {
-                        Log::info("✓ Got " . count($recipes) . " recipes");
+                    $recipes = $this->callOpenAI($apiKey, $lang, $category, $previousRecipes);
+                    if ($recipes && count($recipes) >= 8) {
+                        Log::info("Successfully generated " . count($recipes) . " recipes");
                         break;
                     }
                 } catch (\Exception $e) {
-                    Log::warning("✗ Attempt {$attempt}: " . $e->getMessage());
-                    if ($attempt < 2) sleep(3);
+                    $lastError = $e->getMessage();
+                    Log::warning("Attempt {$attempt} failed: " . $lastError);
+                    if ($attempt < 3) {
+                        sleep(2);
+                    }
                 }
             }
 
-            if (!$recipes || count($recipes) < 6) {
-                return response()->json(['error' => 'Failed to generate', 'recipes' => []], 500);
+            if (!$recipes || count($recipes) < 8) {
+                Log::error('Failed to generate recipes: ' . ($lastError ?? 'Unknown error'));
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Unable to generate recipes',
+                    'recipes' => []
+                ], 500);
             }
 
-            // Cache لمدة ساعتين
-            Cache::put($cacheKey, $recipes, 7200);
+            // تخزين في الكاش
+            Cache::put($cacheKey, $recipes, 7200); // ساعتين
 
-            return response()->json(['recipes' => $recipes]);
+            // تحديث التاريخ
+            $newHistory = array_merge($previousRecipes, array_column($recipes, 'title'));
+            $newHistory = array_slice(array_unique($newHistory), -50);
+            Cache::put($historyKey, $newHistory, 86400); // 24 ساعة
+
+            return response()->json([
+                'success' => true,
+                'recipes' => $recipes
+            ]);
         } catch (\Exception $e) {
-            Log::error("✗ Error: " . $e->getMessage());
-            return response()->json(['error' => $e->getMessage(), 'recipes' => []], 500);
+            Log::error('Fatal error in index: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Server error occurred',
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+                'recipes' => []
+            ], 500);
         }
     }
 
-    private function callOpenAI($apiKey, $lang, $category)
+    private function callOpenAI($apiKey, $lang, $category, $previousRecipes = [])
     {
-        $prompt = $this->buildPrompt($lang, $category);
-
-        Log::info("Calling OpenAI for {$lang} - {$category}");
+        $prompt = $this->buildPrompt($lang, $category, $previousRecipes);
+        Log::info("Calling OpenAI API", ['lang' => $lang, 'category' => $category]);
 
         $response = Http::withToken($apiKey)
-            ->timeout(60)
+            ->timeout(90)
+            ->retry(3, 1000)
             ->post('https://api.openai.com/v1/chat/completions', [
                 'model' => 'gpt-4o-mini',
-                'messages' => [['role' => 'user', 'content' => $prompt]],
-                'temperature' => 0.8,
-                'max_tokens' => 3500,
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => 'You are a professional nutritionist specializing in healthy children\'s meals. Always respond with valid JSON only.'
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $prompt
+                    ]
+                ],
+                'temperature' => 0.9,
+                'max_tokens' => 4000,
+                'presence_penalty' => 1.5,
+                'frequency_penalty' => 1.5,
                 'response_format' => ['type' => 'json_object']
             ]);
 
         if (!$response->successful()) {
-            throw new \Exception('OpenAI failed: ' . $response->status());
+            $statusCode = $response->status();
+            $errorBody = $response->body();
+            Log::error("OpenAI API failed", [
+                'status' => $statusCode,
+                'body' => $errorBody
+            ]);
+            throw new \Exception("OpenAI API request failed with status: {$statusCode}");
         }
 
         $content = $response->json('choices.0.message.content', '');
         if (empty($content)) {
-            throw new \Exception('Empty response');
+            throw new \Exception('Empty response from OpenAI');
         }
 
         $data = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \Exception('Invalid JSON');
+            throw new \Exception('Invalid JSON response: ' . json_last_error_msg());
         }
 
-        if (!isset($data['recipes'])) {
-            throw new \Exception('No recipes in response');
+        if (!isset($data['recipes']) || !is_array($data['recipes'])) {
+            throw new \Exception('Response missing recipes array');
         }
 
         return $this->processRecipes($data['recipes'], $lang);
     }
 
-    private function buildPrompt($lang, $category)
+    private function buildPrompt($lang, $category, $previousRecipes = [])
     {
-        // تحديد نوع الوصفات حسب الكاتيجوري
-        $categoryText = '';
-        if ($category !== 'all') {
-            $categories = [
-                'breakfast' => ['ar' => 'فطور', 'en' => 'Breakfast'],
-                'lunch' => ['ar' => 'غداء', 'en' => 'Lunch'],
-                'dinner' => ['ar' => 'عشاء', 'en' => 'Dinner'],
-                'snack' => ['ar' => 'سناك', 'en' => 'Snack'],
-            ];
-            $catName = $categories[$category][$lang] ?? 'All';
-            $categoryText = $lang === 'ar'
-                ? " **كل الوصفات يجب أن تكون من فئة {$catName} فقط**"
-                : " **All recipes must be {$catName} category only**";
+        $categoryFilter = '';
+        $categories = [
+            'breakfast' => ['ar' => 'فطور', 'en' => 'Breakfast'],
+            'lunch' => ['ar' => 'غداء', 'en' => 'Lunch'],
+            'dinner' => ['ar' => 'عشاء', 'en' => 'Dinner'],
+            'snack' => ['ar' => 'سناك', 'en' => 'Snack'],
+        ];
+
+        if ($category !== 'all' && isset($categories[$category])) {
+            $catName = $categories[$category][$lang];
+            $categoryFilter = $lang === 'ar'
+                ? "\n- **جميع الوصفات يجب أن تكون من فئة {$catName} فقط**"
+                : "\n- **All recipes MUST be {$catName} category only**";
+        }
+
+        $avoidList = '';
+        if (!empty($previousRecipes)) {
+            $avoid = implode('، ', array_slice($previousRecipes, -20));
+            $avoidList = $lang === 'ar'
+                ? "\n\n⚠️ **يُمنع تكرار هذه الوصفات تماماً:** {$avoid}. أنشئ وصفات جديدة فريدة فقط."
+                : "\n\n⚠️ **DO NOT repeat these recipes at all:** {$avoid}. Generate completely new and unique recipes only.";
         }
 
         if ($lang === 'ar') {
-            return "أنشئ 8 وصفات عربية صحية للأطفال 3-10 سنوات.{$categoryText}
-
-شروط صارمة:
-- **وصفات عربية وشرق أوسطية فقط** (لبنانية، سورية، مصرية، خليجية)
-- بسيطة وآمنة للأطفال
-- **بدون توابل حارة إطلاقاً**
-- تعليمات واضحة (5-6 خطوات مفصلة)
-- حصص: 1-3 أطفال
-
-أمثلة وصفات مناسبة:
-- مناقيش جبنة بيضاء
-- معكرونة بصلصة طماطم خفيفة
-- أرز بخضار ملونة  
-- شوربة عدس ناعمة
-- دجاج مشوي بنكهة بسيطة
-- زبادي بالفواكه
-
+            return "أنشئ 8 وصفات عربية صحية مبتكرة وجديدة تماماً للأطفال (3-10 سنوات).{$categoryFilter}{$avoidList}
+**متطلبات صارمة:**
+- وصفات عربية وشرق أوسطية فقط (لبنانية، سورية، مصرية، خليجية، مغاربية)
+- **يجب أن تكون كل وصفة فريدة وغير مكررة تماماً**
+- بسيطة وآمنة ومحببة للأطفال
+- **ممنوع استخدام أي توابل حارة**
+- تعليمات واضحة ومفصلة (5-7 خطوات)
+- الحصص: 2-4 أطفال
 **JSON فقط:**
 {
   \"recipes\": [
     {
       \"title\": \"Cheese Manakish\",
-      \"titleAr\": \"مناقيش الجبنة\",
-      \"description\": \"مناقيش شهية بالجبنة للأطفال\",
+      \"titleAr\": \"مناقيش الجبنة البيضاء\",
+      \"description\": \"مناقيش لذيذة بالجبنة البيضاء\",
       \"category\": \"Breakfast\",
       \"categoryAr\": \"فطور\",
-      \"ingredients\": [\"عجينة\", \"جبنة بيضاء\", \"زيت زيتون\"],
-      \"instructions\": \"خطوة 1: سخن الفرن 180 درجة لمدة 10 دقائق\\n\\nخطوة 2: افرد العجينة\\n\\nخطوة 3: ضع الجبنة\\n\\nخطوة 4: اخبز 15 دقيقة\",
+      \"ingredients\": [\"عجينة طرية\", \"جبنة بيضاء\", \"زيت زيتون\"],
+      \"instructions\": \"خطوة 1: سخن الفرن على 200 درجة\\n\\nخطوة 2: افرد العجينة\\n\\nخطوة 3: وزع الجبنة\\n\\nخطوة 4: اخبز 15 دقيقة\",
       \"time\": \"25\",
-      \"servings\": 2,
+      \"servings\": 3,
       \"difficulty\": \"سهل\",
-      \"calories\": 200,
-      \"protein\": \"10g\",
+      \"calories\": 220,
+      \"protein\": \"12g\",
       \"benefits\": \"غني بالكالسيوم\",
       \"kid_friendly_tip\": \"قطعها أشكال مرحة\"
     }
@@ -165,41 +221,32 @@ class KidsMealsController extends Controller
 }";
         }
 
-        return "Create 8 healthy Western recipes for kids 3-10 years.{$categoryText}
-
-Strict Requirements:
-- **Western/International recipes only** (American, European, simple Asian-fusion)
-- Simple and safe for kids
-- **NO spicy ingredients at all**
-- Clear instructions (5-6 detailed steps)
-- Servings: 1-3 kids
-
-Good examples:
-- Fluffy pancakes with fruit
-- Mac and cheese (mild)
-- Simple pasta with tomato sauce
-- Chicken nuggets (baked)
-- Fruit smoothie bowl
-- Yogurt parfait
-
+        return "Create 8 completely NEW and UNIQUE healthy Western recipes for kids (3-10 years).{$categoryFilter}{$avoidList}
+**Strict Requirements:**
+- Western/International cuisine only
+- **Each recipe MUST be completely unique**
+- Simple, safe, and kid-approved
+- **NO spicy ingredients**
+- Clear instructions (5-7 steps)
+- Servings: 2-4 kids
 **JSON only:**
 {
   \"recipes\": [
     {
-      \"title\": \"Fluffy Pancakes\",
-      \"titleAr\": \"فطائر\",
-      \"description\": \"Soft pancakes for kids\",
-      \"category\": \"Breakfast\",
-      \"categoryAr\": \"فطور\",
-      \"ingredients\": [\"flour\", \"eggs\", \"milk\"],
-      \"instructions\": \"Step 1: Mix flour and milk\\n\\nStep 2: Beat eggs\\n\\nStep 3: Combine all\\n\\nStep 4: Cook on pan\",
-      \"time\": \"15\",
-      \"servings\": 2,
+      \"title\": \"Rainbow Veggie Pasta\",
+      \"titleAr\": \"معكرونة الخضار الملونة\",
+      \"description\": \"Colorful pasta with vegetables\",
+      \"category\": \"Lunch\",
+      \"categoryAr\": \"غداء\",
+      \"ingredients\": [\"pasta\", \"tomatoes\", \"peppers\", \"olive oil\"],
+      \"instructions\": \"Step 1: Boil pasta\\n\\nStep 2: Chop vegetables\\n\\nStep 3: Sauté vegetables\\n\\nStep 4: Mix together\",
+      \"time\": \"20\",
+      \"servings\": 3,
       \"difficulty\": \"Easy\",
-      \"calories\": 180,
-      \"protein\": \"8g\",
-      \"benefits\": \"Energy for kids\",
-      \"kid_friendly_tip\": \"Use fun shapes\"
+      \"calories\": 280,
+      \"protein\": \"9g\",
+      \"benefits\": \"Rich in vitamins\",
+      \"kid_friendly_tip\": \"Let kids pick veggie colors\"
     }
   ]
 }";
@@ -208,159 +255,135 @@ Good examples:
     private function processRecipes($recipes, $lang)
     {
         $result = [];
+        foreach (array_slice($recipes, 0, 8) as $index => $r) {
+            if (empty($r['title']) || empty($r['ingredients']) || empty($r['instructions'])) {
+                continue;
+            }
 
-        foreach (array_slice($recipes, 0, 8) as $r) {
-            $title = $r['title'] ?? 'Recipe';
-            $titleAr = $r['titleAr'] ?? $title;
+            $title = trim($r['title']);
+            $titleAr = isset($r['titleAr']) ? trim($r['titleAr']) : $title;
 
             $ingredients = [];
-            if (isset($r['ingredients']) && is_array($r['ingredients'])) {
+            if (is_array($r['ingredients'])) {
                 foreach ($r['ingredients'] as $ing) {
                     if (is_string($ing) && !empty(trim($ing))) {
                         $ingredients[] = trim($ing);
                     }
                 }
             }
-
-            if (empty($ingredients)) continue;
-
-            $instructions = '';
-            if (isset($r['instructions'])) {
-                if (is_string($r['instructions'])) {
-                    $instructions = trim($r['instructions']);
-                } elseif (is_array($r['instructions'])) {
-                    $steps = [];
-                    foreach ($r['instructions'] as $i => $step) {
-                        $prefix = $lang === 'ar' ? "خطوة " : "Step ";
-                        $steps[] = $prefix . ($i + 1) . ": " . trim($step);
-                    }
-                    $instructions = implode("\n\n", $steps);
-                }
+            if (count($ingredients) < 2) {
+                continue;
             }
 
-            if (empty($instructions)) continue;
+            $instructions = '';
+            if (is_string($r['instructions'])) {
+                $instructions = trim($r['instructions']);
+            } elseif (is_array($r['instructions'])) {
+                $steps = [];
+                foreach ($r['instructions'] as $i => $step) {
+                    $prefix = $lang === 'ar' ? 'خطوة ' : 'Step ';
+                    $steps[] = $prefix . ($i + 1) . ': ' . trim($step);
+                }
+                $instructions = implode("\n\n", $steps);
+            }
+            if (empty($instructions)) {
+                continue;
+            }
 
-            // الصورة الدقيقة
-            $image = $this->getAccurateImage($title, $titleAr, $lang);
+            $image = $this->getRecipeImage($title, $titleAr, $lang);
 
             $result[] = [
                 'id' => (string) Str::uuid(),
                 'title' => $title,
                 'titleAr' => $titleAr,
                 'description' => isset($r['description']) ? trim($r['description']) : '',
-                'category' => $r['category'] ?? ($lang === 'ar' ? 'سناك' : 'Snack'),
-                'categoryAr' => $r['categoryAr'] ?? 'سناك',
-                'time' => (string)($r['time'] ?? '20'),
-                'servings' => (int)($r['servings'] ?? 2),
+                'category' => $r['category'] ?? ($lang === 'ar' ? 'وجبة' : 'Meal'),
+                'categoryAr' => $r['categoryAr'] ?? 'وجبة',
+                'time' => (string) ($r['time'] ?? '20'),
+                'servings' => (int) ($r['servings'] ?? 3),
                 'difficulty' => $r['difficulty'] ?? ($lang === 'ar' ? 'سهل' : 'Easy'),
                 'age_range' => '3-10',
                 'ingredients' => $ingredients,
                 'instructions' => $instructions,
                 'instructionsAr' => $instructions,
-                'calories' => (int)($r['calories'] ?? 200),
-                'protein' => $r['protein'] ?? '10g',
+                'calories' => (int) ($r['calories'] ?? rand(180, 350)),
+                'protein' => $r['protein'] ?? rand(8, 15) . 'g',
                 'benefits' => $r['benefits'] ?? '',
                 'kid_friendly_tip' => $r['kid_friendly_tip'] ?? '',
                 'image' => $image,
-                'rating' => round(4.5 + (rand(0, 5) / 10), 1),
+                'rating' => round(4.3 + (rand(0, 7) / 10), 1),
             ];
         }
 
         return $result;
     }
 
-    private function getAccurateImage($title, $titleAr, $lang)
+    private function getRecipeImage($title, $titleAr, $lang)
     {
-        // صور دقيقة جداً لكل طبق
-        $imageMap = [
-            // عربي - صور دقيقة
-            'مناقيش' => 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&q=80',
-            'منقوشة' => 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&q=80',
-            'جبنة' => 'https://images.unsplash.com/photo-1452195100486-9cc805987862?w=800&q=80',
-            'فطيرة' => 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&q=80',
-            'لبنة' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800&q=80',
-            'حمص' => 'https://images.unsplash.com/photo-1571159666137-b4e0653770e0?w=800&q=80',
-            'شوربة' => 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&q=80',
-            'عدس' => 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800&q=80',
-            'معكرونة' => 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80',
-            'أرز' => 'https://images.unsplash.com/photo-1516684732162-798a0062be99?w=800&q=80',
-            'دجاج' => 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=800&q=80',
-            'فواكه' => 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&q=80',
-            'زبادي' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800&q=80',
-            'سلطة' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80',
-            'كبة' => 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80',
-            'بطاطا' => 'https://images.unsplash.com/photo-1518013431117-eb1465fa5752?w=800&q=80',
-            'عجة' => 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=800&q=80',
-            'بيض' => 'https://images.unsplash.com/photo-1525351326368-efbb5cb6814d?w=800&q=80',
-
-            // غربي - صور دقيقة
-            'pancake' => 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80',
-            'waffle' => 'https://images.unsplash.com/photo-1562376552-0d160a2f238d?w=800&q=80',
-            'french toast' => 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&q=80',
-            'toast' => 'https://images.unsplash.com/photo-1525351326368-efbb5cb6814d?w=800&q=80',
-            'omelette' => 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=800&q=80',
-            'egg' => 'https://images.unsplash.com/photo-1525351326368-efbb5cb6814d?w=800&q=80',
-            'mac' => 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800&q=80',
-            'macaroni' => 'https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800&q=80',
-            'cheese' => 'https://images.unsplash.com/photo-1452195100486-9cc805987862?w=800&q=80',
-            'pizza' => 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80',
-            'pasta' => 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80',
-            'spaghetti' => 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=80',
-            'chicken' => 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=800&q=80',
-            'nugget' => 'https://images.unsplash.com/photo-1562967914-608f82629710?w=800&q=80',
-            'burger' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80',
-            'sandwich' => 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=800&q=80',
-            'smoothie' => 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=800&q=80',
-            'yogurt' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800&q=80',
-            'fruit' => 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&q=80',
-            'salad' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80',
-            'soup' => 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&q=80',
-            'rice' => 'https://images.unsplash.com/photo-1516684732162-798a0062be99?w=800&q=80',
-        ];
-
-        $titleLower = mb_strtolower($title);
-        $titleArLower = mb_strtolower($titleAr);
-        $combined = $titleLower . ' ' . $titleArLower;
-
-        // البحث عن تطابق دقيق
-        foreach ($imageMap as $keyword => $url) {
-            if (mb_strpos($combined, $keyword) !== false) {
-                return $url;
-            }
-        }
-
-        // صورة افتراضية حسب اللغة
-        return $lang === 'ar'
-            ? 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=800&q=80' // طعام عربي
-            : 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80'; // طعام عام
+        $query = $lang === 'ar' ? $titleAr : $title;
+        return "https://source.unsplash.com/featured/800x600?" . urlencode($query . ' kids meal healthy');
     }
 
     public function getTips(Request $request)
     {
-        $lang = $request->query('lang', 'en');
+        try {
+            $lang = $request->query('lang', 'en') === 'ar' ? 'ar' : 'en';
+            $cacheKey = "kids_nutrition_tips_{$lang}";
 
-        $tips = $lang === 'ar'
-            ? [
-                'قدم الخضروات والفواكه الملونة يومياً',
-                'شجع الطفل على شرب الماء بانتظام',
-                'قلل السكريات والحلويات المصنعة',
-                'اجعل وقت الطعام ممتعاً',
-                'كن قدوة حسنة للطفل',
-                'دع الطفل يساعد في المطبخ',
-                'قدم وجبات صغيرة متعددة',
-                'تحلى بالصبر مع الأطعمة الجديدة'
-            ]
-            : [
-                'Offer colorful vegetables daily',
-                'Encourage water drinking',
-                'Limit processed sugars',
-                'Make mealtime fun',
-                'Be a good role model',
-                'Let kids help cooking',
-                'Small frequent meals',
-                'Be patient with new foods'
-            ];
+            if (Cache::has($cacheKey)) {
+                return response()->json([
+                    'success' => true,
+                    'tips' => Cache::get($cacheKey)
+                ]);
+            }
 
-        return response()->json(['success' => true, 'tips' => $tips]);
+            $apiKey = env('OPENAI_API_KEY');
+            if (!$apiKey) {
+                Log::error('OpenAI API key is missing for tips');
+                return response()->json([
+                    'success' => false,
+                    'error' => 'API configuration error',
+                    'tips' => []
+                ], 500);
+            }
+
+            $prompt = $lang === 'ar'
+                ? 'أنشئ قائمة بـ 8 نصائح صحية مختصرة ومفيدة لتغذية الأطفال (3-10 سنوات) باللغة العربية. كل نصيحة في سطر واحد فقط. JSON فقط: {"tips": ["نصيحة 1", "نصيحة 2", ...]}'
+                : 'Create a list of 8 brief nutrition tips for kids (3-10 years) in English. Each tip in one line. JSON only: {"tips": ["tip 1", "tip 2", ...]}';
+
+            $response = Http::withToken($apiKey)
+                ->timeout(30)
+                ->retry(3, 1000)
+                ->post('https://api.openai.com/v1/chat/completions', [
+                    'model' => 'gpt-4o-mini',
+                    'messages' => [['role' => 'user', 'content' => $prompt]],
+                    'temperature' => 0.8,
+                    'max_tokens' => 500,
+                    'response_format' => ['type' => 'json_object']
+                ]);
+
+            if ($response->successful()) {
+                $content = $response->json('choices.0.message.content', '');
+                $data = json_decode($content, true);
+                if (isset($data['tips']) && is_array($data['tips']) && count($data['tips']) >= 8) {
+                    Cache::put($cacheKey, $data['tips'], 86400);
+                    return response()->json(['success' => true, 'tips' => $data['tips']]);
+                }
+            }
+
+            Log::warning('Failed to generate tips from API');
+            return response()->json([
+                'success' => false,
+                'error' => 'Unable to generate tips',
+                'tips' => []
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Error in getTips: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Server error occurred',
+                'tips' => []
+            ], 500);
+        }
     }
 }

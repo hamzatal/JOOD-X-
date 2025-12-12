@@ -19,9 +19,7 @@ export default function KidsMealModal({ meal, onClose, lang }) {
     const [showFull, setShowFull] = useState(false);
     const isRTL = lang === "ar";
     const t = (ar, en) => (lang === "ar" ? ar : en);
-
     if (!meal) return null;
-
     const title = lang === "ar" && meal.titleAr ? meal.titleAr : meal.title;
     const instructions =
         lang === "ar" && meal.instructionsAr
@@ -56,7 +54,6 @@ export default function KidsMealModal({ meal, onClose, lang }) {
                         className="w-full h-64 lg:w-96 lg:h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-
                     <div
                         className={`absolute bottom-4 ${
                             isRTL ? "right-4" : "left-4"
@@ -77,7 +74,6 @@ export default function KidsMealModal({ meal, onClose, lang }) {
                         )}
                     </div>
                 </div>
-
                 {/* قسم المحتوى */}
                 <div
                     className="flex-1 flex flex-col"
@@ -129,7 +125,6 @@ export default function KidsMealModal({ meal, onClose, lang }) {
                             </button>
                         </div>
                     </div>
-
                     {/* المعلومات السريعة */}
                     <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-green-700/30">
                         {[
@@ -170,7 +165,6 @@ export default function KidsMealModal({ meal, onClose, lang }) {
                             </div>
                         ))}
                     </div>
-
                     {/* المحتوى القابل للتمرير */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                         {/* نصيحة للأطفال */}
@@ -193,7 +187,6 @@ export default function KidsMealModal({ meal, onClose, lang }) {
                                 </p>
                             </div>
                         )}
-
                         {/* الفوائد */}
                         {meal.benefits && (
                             <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-l-4 border-green-400 p-4 rounded-xl">
@@ -214,7 +207,6 @@ export default function KidsMealModal({ meal, onClose, lang }) {
                                 </p>
                             </div>
                         )}
-
                         {/* المكونات */}
                         <div>
                             <h3
@@ -244,7 +236,6 @@ export default function KidsMealModal({ meal, onClose, lang }) {
                                 ))}
                             </div>
                         </div>
-
                         {/* التعليمات */}
                         <div>
                             <h3
@@ -298,23 +289,22 @@ export default function KidsMealModal({ meal, onClose, lang }) {
                     </div>
                 </div>
             </motion.div>
-
             <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(6, 78, 59, 0.3);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: linear-gradient(180deg, #10b981, #059669);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: linear-gradient(180deg, #059669, #047857);
-                }
-            `}</style>
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(6, 78, 59, 0.3);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, #10b981, #059669);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, #059669, #047857);
+        }
+      `}</style>
         </motion.div>
     );
 }

@@ -7,7 +7,6 @@ export default function KidsFilters({
     onCategoryChange,
 }) {
     const t = (ar, en) => (lang === "ar" ? ar : en);
-
     const categories = [
         {
             id: "all",

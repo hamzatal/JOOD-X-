@@ -15,7 +15,6 @@ import {
 
 export default function KidsHero({ lang, onRefresh, refreshing }) {
     const t = (ar, en) => (lang === "ar" ? ar : en);
-
     return (
         <section className="relative overflow-hidden bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 text-white py-20 px-6">
             {/* خلفية متحركة */}
@@ -77,7 +76,6 @@ export default function KidsHero({ lang, onRefresh, refreshing }) {
                     <Apple size={100} className="opacity-30" />
                 </motion.div>
             </div>
-
             <div className="max-w-7xl mx-auto relative z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -126,21 +124,18 @@ export default function KidsHero({ lang, onRefresh, refreshing }) {
                             />
                         </motion.div>
                     </div>
-
                     <p className="text-xl md:text-3xl font-bold text-yellow-100 max-w-4xl mx-auto mb-4 drop-shadow-lg">
                         {t(
                             "🥗 وجبات صحية ولذيذة وملونة يحبها كل طفل! 🎉",
                             "🥗 Healthy, Tasty & Colorful Meals Every Kid Loves! 🎉"
                         )}
                     </p>
-
                     <p className="text-lg text-white/90 max-w-3xl mx-auto mb-8">
                         {t(
                             "وصفات سريعة وسهلة | مكونات صحية | ألوان مبهجة | مناسبة للأعمار 3-10 سنوات",
                             "Quick & Easy Recipes | Healthy Ingredients | Bright Colors | Perfect for Ages 3-10"
                         )}
                     </p>
-
                     <motion.button
                         whileHover={{ scale: 1.08 }}
                         whileTap={{ scale: 0.95 }}
@@ -160,7 +155,6 @@ export default function KidsHero({ lang, onRefresh, refreshing }) {
                                   "✨ Generate New Recipes"
                               )}
                     </motion.button>
-
                     {/* شارات ميزات */}
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
                         {[
@@ -199,7 +193,6 @@ export default function KidsHero({ lang, onRefresh, refreshing }) {
                     </div>
                 </motion.div>
             </div>
-
             {/* موجة سفلية */}
             <div className="absolute bottom-0 left-0 right-0">
                 <svg

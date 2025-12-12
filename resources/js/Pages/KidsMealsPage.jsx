@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cookie, Heart, Smile, Clock, Apple } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -7,9 +7,11 @@ import KidsHero from "@/components/kidsMeal/KidsHero";
 import KidsFilters from "@/components/kidsMeal/KidsFilters";
 import KidsMealCard from "@/components/kidsMeal/KidsMealCard";
 import KidsMealModal from "@/components/kidsMeal/KidsMealModal";
+import { useLang } from "@/context/LangContext";
+import { useState } from "react";
 
 export default function KidsMealsPage() {
-    const [lang, setLang] = useState("ar");
+    const { lang, t } = useLang();
     const [meals, setMeals] = useState([]);
     const [tips, setTips] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,19 +21,18 @@ export default function KidsMealsPage() {
     const [showModal, setShowModal] = useState(false);
     const [activeCategory, setActiveCategory] = useState("all");
 
-    const t = (ar, en) => (lang === "ar" ? ar : en);
-
     const fetchMeals = async (force = false, category = activeCategory) => {
         try {
             if (force) setRefreshing(true);
             else setLoading(true);
-
             const res = await fetch(
                 `/api/kids-meals?lang=${lang}&refresh=${force}&category=${category}`
             );
+            if (!res.ok) {
+                throw new Error("Failed to fetch");
+            }
             const data = await res.json();
-
-            if (data.recipes && Array.isArray(data.recipes)) {
+            if (data.success && Array.isArray(data.recipes)) {
                 setMeals(data.recipes);
             } else {
                 console.error("Invalid response format:", data);
@@ -50,19 +51,23 @@ export default function KidsMealsPage() {
         try {
             setTipsLoading(true);
             const res = await fetch(`/api/kids-meals/tips?lang=${lang}`);
+            if (!res.ok) {
+                throw new Error("Failed to fetch tips");
+            }
             const data = await res.json();
-
-            if (data.success && data.tips) {
+            if (data.success && Array.isArray(data.tips)) {
                 setTips(data.tips);
+            } else {
+                setTips([]);
             }
         } catch (e) {
             console.error("Failed to fetch tips:", e);
+            setTips([]);
         } finally {
             setTipsLoading(false);
         }
     };
 
-    // تحديث البيانات عند تغيير اللغة أو الفئة
     useEffect(() => {
         fetchMeals(false, activeCategory);
         fetchTips();
@@ -82,14 +87,12 @@ export default function KidsMealsPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-gray-200">
-            <Navbar lang={lang} setLang={setLang} />
-
+            <Navbar />
             <KidsHero
                 lang={lang}
                 onRefresh={() => fetchMeals(true, activeCategory)}
                 refreshing={refreshing}
             />
-
             <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
                 {/* الفلاتر */}
                 <KidsFilters
@@ -97,7 +100,6 @@ export default function KidsMealsPage() {
                     activeCategory={activeCategory}
                     onCategoryChange={setActiveCategory}
                 />
-
                 {/* العنوان */}
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <h2 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
@@ -110,7 +112,6 @@ export default function KidsMealsPage() {
                         {meals.length} {t("وصفة", "recipes")}
                     </div>
                 </div>
-
                 {/* قائمة الوجبات */}
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -161,7 +162,6 @@ export default function KidsMealsPage() {
                         )}
                     </motion.div>
                 )}
-
                 {/* النصائح */}
                 <section className="mt-16 mb-12 bg-gradient-to-br from-green-900/30 via-emerald-900/30 to-teal-900/30 p-6 sm:p-8 rounded-3xl border-2 border-green-500/30 shadow-2xl backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-6">
@@ -176,16 +176,19 @@ export default function KidsMealsPage() {
                             )}
                         </h3>
                     </div>
-
                     {tipsLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {[...Array(6)].map((_, i) => (
+                            {[...Array(8)].map((_, i) => (
                                 <div
                                     key={i}
                                     className="h-20 bg-gray-800/50 rounded-xl animate-pulse"
                                 />
                             ))}
                         </div>
+                    ) : tips.length === 0 ? (
+                        <p className="text-center text-gray-400 py-8">
+                            {t("لا توجد نصائح حالياً", "No tips available")}
+                        </p>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {tips.map((tip, i) => (
@@ -207,7 +210,6 @@ export default function KidsMealsPage() {
                         </div>
                     )}
                 </section>
-
                 {/* قسم معلومات إضافية */}
                 <section className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                     {[
@@ -261,9 +263,7 @@ export default function KidsMealsPage() {
                     ))}
                 </section>
             </main>
-
             <Footer lang={lang} />
-
             <AnimatePresence>
                 {showModal && selectedMeal && (
                     <KidsMealModal
