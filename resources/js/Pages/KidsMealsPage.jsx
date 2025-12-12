@@ -67,8 +67,8 @@ export default function KidsMealsPage() {
             setTipsLoading(false);
         }
     };
-
     useEffect(() => {
+        setRefreshing(true); 
         fetchMeals(false, activeCategory);
         fetchTips();
     }, [lang, activeCategory]);
