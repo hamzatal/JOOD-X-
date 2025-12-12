@@ -26,7 +26,6 @@ export default function KidsMealsPage() {
             if (force) setRefreshing(true);
             else setLoading(true);
 
-            // إرسال اللغة والفئة بشكل صحيح
             const res = await fetch(
                 `/api/kids-meals?lang=${lang}&refresh=${force}&category=${category}`
             );
@@ -114,8 +113,8 @@ export default function KidsMealsPage() {
 
                 {/* قائمة الوجبات */}
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {[...Array(12)].map((_, i) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+                        {[...Array(8)].map((_, i) => (
                             <div
                                 key={i}
                                 className="h-96 bg-gray-800/50 rounded-3xl animate-pulse border border-gray-700/50"
@@ -127,7 +126,7 @@ export default function KidsMealsPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.5 }}
-                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6"
                     >
                         {meals.length === 0 ? (
                             <div className="col-span-full text-center py-20">
