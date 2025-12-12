@@ -6,7 +6,6 @@ const LangContext = createContext();
 
 const translations = {
     ar: {
-        // الناف بار
         الرئيسية: "الرئيسية",
         Home: "الرئيسية",
         "شو اطبخ؟": "شو اطبخ؟",
@@ -34,7 +33,6 @@ const translations = {
         "لوحة الإدارة": "لوحة الإدارة",
         "Admin Panel": "لوحة الإدارة",
 
-        // باقي النصوص في الموقع
         باستا: "باستا",
         Pasta: "باستا",
         نباتي: "نباتي",
@@ -94,7 +92,6 @@ const translations = {
 export function LangProvider({ children }) {
     const [lang, setLang] = useState("ar");
 
-    // تحميل اللغة عند أول تشغيل
     useEffect(() => {
         const savedLang = localStorage.getItem("lang");
         const initialLang = savedLang || "ar";
@@ -104,16 +101,13 @@ export function LangProvider({ children }) {
         document.documentElement.lang = initialLang;
     }, []);
 
-    // دالة تغيير اللغة – بدون reload أبدًا
     const changeLang = (newLang) => {
         setLang(newLang);
         localStorage.setItem("lang", newLang);
         document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
         document.documentElement.lang = newLang;
-        // لا حاجة لـ reload، كل شيء يتغير فورًا
     };
 
-    // دالة الترجمة البسيطة والسريعة
     const t = (arabicText, englishText) => {
         return lang === "ar" ? arabicText : englishText;
     };
