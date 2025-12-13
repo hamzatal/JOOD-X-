@@ -6,6 +6,12 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 
+// ==============================
+// Blog page (Inertia)
+// ==============================
+Route::get('/blog', function () {
+    return Inertia::render('BlogPage');
+})->name('blog');
 
 // ==============================
 // KIDS MEALS - Kid-Friendly Recipes

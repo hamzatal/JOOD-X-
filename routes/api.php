@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\RandomRecipesController;
 use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\MealPlannerController;
 use App\Http\Controllers\Api\KidsMealsController;
+use App\Http\Controllers\Api\BlogController;
 
 
 /*
@@ -17,14 +18,19 @@ use App\Http\Controllers\Api\KidsMealsController;
 |--------------------------------------------------------------------------
 */
 
+// ============================================================================
+// BLOG - AI Generated Articles
+// ============================================================================
+Route::get('/blog', [BlogController::class, 'index']);
 
-Route::get('/kids-meals', [KidsMealsController::class, 'index']);
-Route::get('/kids-meals/tips', [KidsMealsController::class, 'getTips']);
+
 
 
 // ============================================================================
 // KIDS MEALS - Kid-Friendly Recipes
 // ============================================================================
+Route::get('/kids-meals', [KidsMealsController::class, 'index']);
+Route::get('/kids-meals/tips', [KidsMealsController::class, 'getTips']);
 
 // ============================================================================
 // MEAL PLANNER - AI Powered Weekly Meal Plans
