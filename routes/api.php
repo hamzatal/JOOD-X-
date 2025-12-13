@@ -9,8 +9,7 @@ use App\Http\Controllers\Api\RandomRecipesController;
 use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\MealPlannerController;
 use App\Http\Controllers\Api\KidsMealsController;
-use App\Http\Controllers\Api\BlogController;
-
+use App\Http\Controllers\Api\MagazineController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,13 +18,12 @@ use App\Http\Controllers\Api\BlogController;
 */
 
 // ============================================================================
-// BLOG - AI Generated Articles
+// MAGAZINE - AI Generated Articles
 // ============================================================================
-Route::get('/blog', [BlogController::class, 'index']);
-
-
-
-
+Route::prefix('magazine')->group(function () {
+    Route::post('/articles', [MagazineController::class, 'getArticles']);
+    Route::post('/refresh', [MagazineController::class, 'refreshArticles']);
+});
 // ============================================================================
 // KIDS MEALS - Kid-Friendly Recipes
 // ============================================================================

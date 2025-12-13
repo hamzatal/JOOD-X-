@@ -7,11 +7,11 @@ use Inertia\Inertia;
 
 
 // ==============================
-// Blog page (Inertia)
+// Magazine page (Inertia)
 // ==============================
-Route::get('/blog', function () {
-    return Inertia::render('BlogPage');
-})->name('blog');
+Route::get('/Magazine', function () {
+    return Inertia::render('MagazinePage');
+})->name('Magazine');
 
 // ==============================
 // KIDS MEALS - Kid-Friendly Recipes

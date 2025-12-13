@@ -243,11 +243,11 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     </Link>
 
                     <Link
-                        href="/blog2"
+                        href="/Magazine"
                         className={`flex items-center gap-1.5 transition pb-1 ${
-                            isActive("/blog2") ? activeClass : inactiveClass
+                            isActive("/Magazine") ? activeClass : inactiveClass
                         }`}
-                        aria-current={isActive("/blog") ? "page" : undefined}
+                        aria-current={isActive("/Magazine") ? "page" : undefined}
                     >
                         <BookOpen size={16} aria-hidden="true" />{" "}
                         {t("مجلة جود", "Jood Magazine")}
@@ -417,9 +417,9 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                         </Link>
 
                         <Link
-                            href="/blog"
+                            href="/Magazine"
                             className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                                isActive("/blog")
+                                isActive("/Magazine")
                                     ? "bg-green-600 text-white"
                                     : "hover:bg-gray-800"
                             }`}
