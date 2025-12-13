@@ -52,6 +52,7 @@ class MagazineController extends Controller
     {
         $cacheKey = "magazine_articles_{$category}_{$lang}";
 
+        // Cache for 1 hour
         return Cache::remember($cacheKey, 3600, function () use ($category, $lang) {
             $apiKey = env('OPENAI_API_KEY');
 
@@ -64,22 +65,22 @@ class MagazineController extends Controller
             Log::info('Calling OpenAI API...');
 
             try {
-                $response = Http::timeout(60)
+                $response = Http::timeout(45) // Reduced from 60 to 45
                     ->withToken($apiKey)
                     ->post('https://api.openai.com/v1/chat/completions', [
                         'model' => 'gpt-4o-mini',
                         'messages' => [
                             [
                                 'role' => 'system',
-                                'content' => 'You are a professional cooking magazine writer. Return ONLY a valid JSON array, no markdown, no explanations.'
+                                'content' => 'You are a professional cooking writer. Write concise articles. Return ONLY valid JSON array, no markdown.'
                             ],
                             [
                                 'role' => 'user',
                                 'content' => $prompt
                             ]
                         ],
-                        'temperature' => 0.7,
-                        'max_tokens' => 3500,
+                        'temperature' => 0.6, // Reduced for faster response
+                        'max_tokens' => 2800, // Reduced from 3500
                     ]);
 
                 if ($response->failed()) {
@@ -103,48 +104,68 @@ class MagazineController extends Controller
                 return $this->enrichArticles($articlesData, $lang);
             } catch (\Illuminate\Http\Client\ConnectionException $e) {
                 throw new \Exception('Network error connecting to OpenAI: ' . $e->getMessage());
+            } catch (\Illuminate\Http\Client\RequestException $e) {
+                throw new \Exception('OpenAI request failed: ' . $e->getMessage());
             }
         });
     }
 
     private function buildPrompt($category, $lang)
     {
-        $count = 9;
+        $count = 6;
 
-        $prompts = [
-            'all' => 'Write 9 diverse cooking articles (mix of news, tips, secrets, health, trends)',
-            'news' => 'Write 9 recent cooking news articles',
-            'tips' => 'Write 9 professional cooking tips articles',
-            'secrets' => 'Write 9 cooking secrets from professional chefs',
-            'health' => 'Write 9 articles about healthy cooking and food benefits',
-            'trends' => 'Write 9 articles about latest cooking trends',
+        $categoryInstructions = [
+            'all' => $lang === 'ar'
+                ? 'اكتب 6 مقالات متنوعة عن الطبخ (أخبار، نصائح، أسرار، صحة، صيحات)'
+                : 'Write 6 diverse cooking articles (news, tips, secrets, health, trends)',
+            'news' => $lang === 'ar'
+                ? 'اكتب 6 مقالات عن أخبار الطبخ الحديثة'
+                : 'Write 6 recent cooking news articles',
+            'tips' => $lang === 'ar'
+                ? 'اكتب 6 مقالات عن نصائح الطبخ الاحترافية'
+                : 'Write 6 professional cooking tips articles',
+            'secrets' => $lang === 'ar'
+                ? 'اكتب 6 مقالات عن أسرار الطبخ من الشيفات'
+                : 'Write 6 cooking secrets from chefs',
+            'health' => $lang === 'ar'
+                ? 'اكتب 6 مقالات عن الطبخ الصحي وفوائد الأطعمة'
+                : 'Write 6 articles about healthy cooking',
+            'trends' => $lang === 'ar'
+                ? 'اكتب 6 مقالات عن صيحات الطبخ الحديثة'
+                : 'Write 6 articles about latest cooking trends',
         ];
 
-        $basePrompt = $prompts[$category] ?? $prompts['all'];
+        $instruction = $categoryInstructions[$category] ?? $categoryInstructions['all'];
 
-        if ($lang === 'ar') {
-            $basePrompt = 'اكتب 9 مقالات عن الطبخ (' . ($category === 'all' ? 'متنوعة' : $category) . ')';
-        }
+        $lengthInstruction = $lang === 'ar'
+            ? 'كل مقال 150-200 كلمة. نصيحتين فقط.'
+            : 'Each article 150-200 words. Only 2 tips.';
 
         $exampleCategory = $category === 'all' ? 'news' : $category;
 
-        return $basePrompt . "\n\nReturn ONLY this JSON format (no markdown, no code blocks):\n\n" .
-            '[
-  {
-    "title": "' . ($lang === 'ar' ? 'عنوان المقال' : 'Article Title') . '",
-    "excerpt": "' . ($lang === 'ar' ? 'ملخص قصير في 2-3 جمل' : 'Short summary in 2-3 sentences') . '",
-    "content": "' . ($lang === 'ar' ? 'المحتوى الكامل 200-300 كلمة' : 'Full content 200-300 words') . '",
-    "category": "' . $exampleCategory . '",
-    "tips": ["' . ($lang === 'ar' ? 'نصيحة 1' : 'tip 1') . '", "' . ($lang === 'ar' ? 'نصيحة 2' : 'tip 2') . '", "' . ($lang === 'ar' ? 'نصيحة 3' : 'tip 3') . '"]
-  }
-]';
+        $jsonTemplate = [
+            [
+                'title' => $lang === 'ar' ? 'عنوان المقال' : 'Article Title',
+                'excerpt' => $lang === 'ar' ? 'ملخص في جملتين' : 'Summary in 2 sentences',
+                'content' => $lang === 'ar' ? 'المحتوى الكامل 150-200 كلمة' : 'Full content 150-200 words',
+                'category' => $exampleCategory,
+                'tips' => [
+                    $lang === 'ar' ? 'نصيحة 1' : 'tip 1',
+                    $lang === 'ar' ? 'نصيحة 2' : 'tip 2'
+                ]
+            ]
+        ];
+
+        return $instruction . ' ' . $lengthInstruction . "\n\n" .
+            "Return ONLY this JSON format (no markdown):\n" .
+            json_encode($jsonTemplate, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     }
 
     private function parseJSON($content)
     {
-        // Clean markdown
-        $content = str_replace('``` json', '', $content);
-        $content = str_replace('```', '', $content);
+        // Remove markdown code blocks
+        $content = preg_replace('/```\s*/', '', $content);
+        $content = preg_replace('/```\s*/', '', $content);
         $content = trim($content);
 
         // Try direct decode
@@ -153,24 +174,35 @@ class MagazineController extends Controller
         if (json_last_error() !== JSON_ERROR_NONE) {
             Log::warning('First JSON decode failed: ' . json_last_error_msg());
 
-            // Try to extract array
-            if (preg_match('/\[[\s\S]*\]/', $content, $matches)) {
+            // Try to extract JSON array using regex
+            if (preg_match('/\[[\s\S]*\]/s', $content, $matches)) {
                 $data = json_decode($matches[0], true);
 
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error('Second JSON decode failed: ' . json_last_error_msg());
-                    Log::error('Content preview: ' . substr($content, 0, 500));
+                    Log::error('Second JSON decode failed', [
+                        'error' => json_last_error_msg(),
+                        'content_preview' => substr($content, 0, 500)
+                    ]);
                     throw new \Exception('JSON parse error: ' . json_last_error_msg());
                 }
             } else {
-                Log::error('No JSON array found');
-                Log::error('Content preview: ' . substr($content, 0, 500));
+                Log::error('No JSON array found', [
+                    'content_preview' => substr($content, 0, 500)
+                ]);
                 throw new \Exception('No valid JSON array found in response');
             }
         }
 
         if (!is_array($data) || empty($data)) {
+            Log::error('Invalid data structure', ['data' => $data]);
             throw new \Exception('Invalid or empty articles array');
+        }
+
+        // Validate each article has required fields
+        foreach ($data as $index => $article) {
+            if (!isset($article['title']) || !isset($article['content'])) {
+                Log::warning("Article {$index} missing required fields", ['article' => $article]);
+            }
         }
 
         return $data;
@@ -191,10 +223,10 @@ class MagazineController extends Controller
             'tips' => $lang === 'ar' ? 'نصائح' : 'Tips',
             'secrets' => $lang === 'ar' ? 'أسرار' : 'Secrets',
             'health' => $lang === 'ar' ? 'صحة' : 'Health',
-            'trends' => $lang === 'ar' ? 'صيحات' : 'Trends',
+            'trends' => $lang === 'ar' ? 'ترندات' : 'Trends',
         ];
 
-        // Real food images from Unsplash
+        // Real food images from Unsplash (6 images)
         $foodImages = [
             'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80',
             'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80',
@@ -202,16 +234,13 @@ class MagazineController extends Controller
             'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=80',
             'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=80',
             'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80',
-            'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&q=80',
-            'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800&q=80',
-            'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80',
         ];
 
         return array_map(function ($article, $index) use ($icons, $labels, $lang, $foodImages) {
             $category = $article['category'] ?? 'news';
 
             return [
-                'id' => $index,
+                'id' => $index + 1,
                 'title' => $article['title'] ?? 'Untitled',
                 'excerpt' => $article['excerpt'] ?? '',
                 'content' => $article['content'] ?? '',
@@ -219,8 +248,8 @@ class MagazineController extends Controller
                 'icon' => $icons[$category] ?? 'Newspaper',
                 'categoryLabel' => $labels[$category] ?? $labels['news'],
                 'date' => now()->format('d M Y'),
-                'readTime' => $lang === 'ar' ? '5 دقائق' : '5 min read',
-                'tips' => $article['tips'] ?? [],
+                'readTime' => $lang === 'ar' ? '3 دقائق' : '3 min read', // Changed from 5 to 3
+                'tips' => array_slice($article['tips'] ?? [], 0, 2), // Only 2 tips
                 'image' => $foodImages[$index % count($foodImages)]
             ];
         }, $articles, array_keys($articles));

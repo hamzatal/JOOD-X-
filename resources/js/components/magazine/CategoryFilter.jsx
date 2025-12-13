@@ -21,7 +21,7 @@ export default function CategoryFilter({
         { id: "tips", label: t("نصائح", "Tips", lang), icon: Lightbulb },
         { id: "secrets", label: t("أسرار", "Secrets", lang), icon: Award },
         { id: "health", label: t("صحة", "Health", lang), icon: Heart },
-        { id: "trends", label: t("صيحات", "Trends", lang), icon: TrendingUp },
+        { id: "trends", label: t("ترندات", "Trends", lang), icon: TrendingUp },
     ];
 
     return (
