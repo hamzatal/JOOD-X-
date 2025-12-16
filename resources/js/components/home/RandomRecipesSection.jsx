@@ -172,10 +172,7 @@ export default function RandomRecipesSection() {
                                             lang === "ar" ? "left-3" : "right-3"
                                         }`}
                                     >
-                                        <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                            <Star className="w-3 h-3 fill-current" />
-                                            4.8
-                                        </div>
+                                      
                                     </div>
                                 </div>
 

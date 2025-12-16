@@ -18,7 +18,7 @@ class HomePageController extends Controller
     public function getTrendingRecipes(Request $request)
     {
         set_time_limit(180);
-        
+
         $lang = $request->query('lang', 'en');
         $refresh = $request->query('refresh', 'false') === 'true';
         $cacheKey = "trending_recipes_v5_{$lang}";
@@ -42,12 +42,11 @@ class HomePageController extends Controller
                 'recipes' => $recipes,
                 'count' => count($recipes)
             ], 200);
-
         } catch (\Exception $e) {
             Log::error("Error: " . $e->getMessage());
-            
+
             $fallback = $this->getFallbackRecipes($lang);
-            
+
             return response()->json([
                 'recipes' => array_slice($fallback, 0, self::RECIPES_COUNT),
                 'message' => 'Using fallback'
@@ -60,24 +59,24 @@ class HomePageController extends Controller
         if ($lang === 'ar') {
             return $this->fetchArabicRecipes();
         }
-        
+
         return $this->fetchInternationalRecipes();
     }
 
     private function fetchArabicRecipes(): array
     {
         Log::info("Fetching Arabic recipes");
-        
+
         try {
             // جلب من المناطق العربية في MealDB
             $arabicAreas = ['Egyptian', 'Moroccan', 'Turkish', 'Tunisian'];
             $allMeals = [];
-            
+
             foreach ($arabicAreas as $area) {
                 try {
                     $response = Http::timeout(self::MEALDB_TIMEOUT)
                         ->get("https://www.themealdb.com/api/json/v1/1/filter.php?a={$area}");
-                    
+
                     if ($response->successful()) {
                         $meals = $response->json('meals', []);
                         if ($meals) {
@@ -96,9 +95,8 @@ class HomePageController extends Controller
 
             // اختيار عشوائي
             $selected = collect($allMeals)->shuffle()->take(8)->pluck('idMeal')->toArray();
-            
-            return $this->fetchMealDetails($selected, 'ar');
 
+            return $this->fetchMealDetails($selected, 'ar');
         } catch (\Exception $e) {
             Log::error("Arabic fetch error: " . $e->getMessage());
             return $this->generateWithOpenAI('ar');
@@ -108,7 +106,7 @@ class HomePageController extends Controller
     private function fetchInternationalRecipes(): array
     {
         Log::info("Fetching international recipes");
-        
+
         try {
             $recipes = [];
             $attempts = 0;
@@ -116,14 +114,14 @@ class HomePageController extends Controller
 
             while (count($recipes) < self::RECIPES_COUNT && $attempts < $maxAttempts) {
                 $attempts++;
-                
+
                 try {
                     $response = Http::timeout(self::MEALDB_TIMEOUT)
                         ->get('https://www.themealdb.com/api/json/v1/1/random.php');
-                    
+
                     if ($response->successful()) {
                         $meal = $response->json('meals.0');
-                        
+
                         if ($meal && $this->isHalal($meal)) {
                             $meal['ingredients'] = $this->extractIngredients($meal);
                             $meal['strDescription'] = $this->generateDescription($meal);
@@ -138,7 +136,6 @@ class HomePageController extends Controller
             }
 
             return $recipes;
-
         } catch (\Exception $e) {
             Log::error("International fetch error: " . $e->getMessage());
             return [];
@@ -148,7 +145,7 @@ class HomePageController extends Controller
     private function fetchMealDetails(array $mealIds, string $lang): array
     {
         $recipes = [];
-        
+
         foreach ($mealIds as $id) {
             if (count($recipes) >= self::RECIPES_COUNT) {
                 break;
@@ -157,18 +154,18 @@ class HomePageController extends Controller
             try {
                 $response = Http::timeout(self::MEALDB_TIMEOUT)
                     ->get("https://www.themealdb.com/api/json/v1/1/lookup.php?i={$id}");
-                
+
                 if ($response->successful()) {
                     $meal = $response->json('meals.0');
-                    
+
                     if ($meal && $this->isHalal($meal)) {
                         $meal['ingredients'] = $this->extractIngredients($meal);
                         $meal['strDescription'] = $this->generateDescription($meal);
-                        
+
                         if ($lang === 'ar') {
                             $meal = $this->translateMeal($meal);
                         }
-                        
+
                         $recipes[] = $meal;
                     }
                 }
@@ -185,17 +182,17 @@ class HomePageController extends Controller
     private function generateWithOpenAI(string $lang): array
     {
         $apiKey = env('OPENAI_API_KEY');
-        
+
         if (!$apiKey) {
             return [];
         }
 
         $cacheKey = "openai_dynamic_{$lang}_" . date('Y-m-d-H');
-        
+
         return Cache::remember($cacheKey, 1800, function () use ($apiKey, $lang) {
             try {
-                $prompt = $lang === 'ar' 
-                    ? $this->getDynamicArabicPrompt() 
+                $prompt = $lang === 'ar'
+                    ? $this->getDynamicArabicPrompt()
                     : $this->getDynamicInternationalPrompt();
 
                 $response = Http::timeout(self::OPENAI_TIMEOUT)
@@ -215,7 +212,6 @@ class HomePageController extends Controller
 
                 $content = $response->json('choices.0.message.content', '');
                 return $this->parseOpenAIResponse($content, $lang);
-
             } catch (\Exception $e) {
                 Log::error("OpenAI generation failed: " . $e->getMessage());
                 return [];
@@ -227,7 +223,7 @@ class HomePageController extends Controller
     {
         // توليد رقم عشوائي لضمان التنوع
         $randomSeed = rand(1000, 9999);
-        
+
         return <<<PROMPT
 أنشئ 5 وصفات عربية فريدة ومختلفة تماماً عن أي وصفات سابقة. استخدم هذا الرقم العشوائي للتنويع: {$randomSeed}
 
@@ -268,7 +264,7 @@ PROMPT;
     private function getDynamicInternationalPrompt(): string
     {
         $randomSeed = rand(1000, 9999);
-        
+
         return <<<PROMPT
 Create 5 unique international recipes. Random seed: {$randomSeed}
 
@@ -330,7 +326,7 @@ PROMPT;
     private function translateMeal(array $meal): array
     {
         $apiKey = env('OPENAI_API_KEY');
-        
+
         if (!$apiKey) {
             return $this->addBasicTranslations($meal);
         }
@@ -339,11 +335,11 @@ PROMPT;
             $meal['strMealAr'] = $this->translateText($meal['strMeal'], 'name', $apiKey);
             $meal['strCategoryAr'] = $this->translateCategory($meal['strCategory'] ?? '');
             $meal['strAreaAr'] = $this->translateArea($meal['strArea'] ?? '');
-            
+
             if (!empty($meal['strDescription'])) {
                 $meal['strDescriptionAr'] = $this->translateText($meal['strDescription'], 'description', $apiKey);
             }
-            
+
             if (!empty($meal['strInstructions'])) {
                 $meal['strInstructionsAr'] = $this->translateText($meal['strInstructions'], 'instructions', $apiKey);
             }
@@ -354,7 +350,6 @@ PROMPT;
                     $meal["strIngredient{$i}Ar"] = $this->translateIngredient($ing, $apiKey);
                 }
             }
-
         } catch (\Exception $e) {
             Log::error("Translation failed: " . $e->getMessage());
             return $this->addBasicTranslations($meal);
@@ -366,10 +361,10 @@ PROMPT;
     private function translateText(string $text, string $type, string $apiKey): string
     {
         $cacheKey = "trans_{$type}_" . md5($text);
-        
+
         return Cache::remember($cacheKey, 604800, function () use ($text, $type, $apiKey) {
             try {
-                $maxTokens = match($type) {
+                $maxTokens = match ($type) {
                     'name' => 30,
                     'description' => 200,
                     'instructions' => 2000,
@@ -391,7 +386,6 @@ PROMPT;
                 if ($response->successful()) {
                     return trim($response->json('choices.0.message.content', $text));
                 }
-
             } catch (\Exception $e) {
                 // silent fail
             }
@@ -403,9 +397,15 @@ PROMPT;
     private function translateIngredient(string $ingredient, string $apiKey): string
     {
         $dict = [
-            'chicken' => 'دجاج', 'beef' => 'لحم بقر', 'rice' => 'أرز',
-            'onion' => 'بصل', 'garlic' => 'ثوم', 'salt' => 'ملح',
-            'pepper' => 'فلفل', 'oil' => 'زيت', 'tomato' => 'طماطم',
+            'chicken' => 'دجاج',
+            'beef' => 'لحم بقر',
+            'rice' => 'أرز',
+            'onion' => 'بصل',
+            'garlic' => 'ثوم',
+            'salt' => 'ملح',
+            'pepper' => 'فلفل',
+            'oil' => 'زيت',
+            'tomato' => 'طماطم',
         ];
 
         $lower = strtolower(trim($ingredient));
@@ -434,13 +434,13 @@ PROMPT;
     {
         $forbidden = ['pork', 'bacon', 'ham', 'wine', 'beer', 'alcohol', 'rum', 'vodka', 'lard'];
         $text = strtolower(json_encode($meal));
-        
+
         foreach ($forbidden as $word) {
             if (strpos($text, $word) !== false) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
