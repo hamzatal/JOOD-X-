@@ -262,7 +262,7 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                     >
                         {lang === "ar" ? "EN" : "ع"}
                     </button>
-
+{/* 
                     {!isLoggedIn && !isAdmin ? (
                         <Link
                             href="/login"
@@ -292,7 +292,7 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                         >
                             <User size={16} /> {t("حسابي", "My Account")}
                         </Link>
-                    )}
+                    )} */}
                 </div>
 
                 {/* Mobile Menu Toggle */}
