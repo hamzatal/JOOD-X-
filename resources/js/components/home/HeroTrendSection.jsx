@@ -143,7 +143,7 @@ export default function HeroTrendSection() {
                 <div className="absolute bottom-20 right-10 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl animate-pulse"></div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 relative z-10 w-full">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-5 relative z-10 w-full">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     {/* Content Side */}
                     <AnimatePresence mode="wait">
@@ -217,7 +217,7 @@ export default function HeroTrendSection() {
                             </div>
 
                             {/* Title */}
-                            <h1 className="text-4xl md:text-5xl lg:text-5xl font-bold leading-tight text-white">
+                            <h1 className="text-4xl md:text-5xl lg:text-4xl font-bold leading-tight text-white">
                                 {displayTitle}
                             </h1>
 
@@ -345,7 +345,7 @@ export default function HeroTrendSection() {
                                         <img
                                             src={meal.strMealThumb}
                                             alt={displayTitle}
-                                            className="w-full h-96 lg:h-[500px] object-cover group-hover:scale-105 transition-transform duration-700"
+                                            className="w-full h-96 lg:h-[480px] object-cover group-hover:scale-105 transition-transform duration-700"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
 
