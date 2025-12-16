@@ -3,32 +3,32 @@ import { useLang } from "@/context/LangContext";
 import {
     Menu,
     X,
-    LogIn,
-    User,
-    ChefHat,
-    Lightbulb,
     Home,
-    HeartPulseIcon,
+    Lightbulb,
+    ChefHat,
+    HeartPulse,
+    Calendar,
+    Baby,
     BookOpen,
-    ChevronDown,
+    Globe,
     Pizza,
     Salad,
     Cookie,
     UtensilsCrossed,
     IceCream,
-    Grid,
     Beef as BeefIcon,
-    ListCheckIcon,
-    BabyIcon,
+    ChevronDown,
+    Star,
+    ArrowRight,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
-export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
+export default function Navbar() {
     const { lang, changeLang, t } = useLang();
-    const [open, setOpen] = useState(false);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const dropdownRef = useRef(null);
-    const timeoutRef = useRef(null);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [categoriesOpen, setCategoriesOpen] = useState(false);
+
+    const categoriesRef = useRef(null);
 
     const currentPath =
         typeof window !== "undefined" ? window.location.pathname : "/";
@@ -38,315 +38,377 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
         return currentPath.startsWith(path);
     };
 
-    const activeClass =
-        "text-green-400 font-semibold border-b-2 border-green-400";
-    const inactiveClass = "text-gray-200 hover:text-green-400";
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                categoriesRef.current &&
+                !categoriesRef.current.contains(event.target)
+            ) {
+                setCategoriesOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const categories = [
         {
             icon: Pizza,
             nameAr: "باستا",
             nameEn: "Pasta",
-            color: "from-red-500 to-orange-500",
+            color: "bg-red-500",
+            emoji: "🍝",
         },
         {
             icon: Salad,
             nameAr: "نباتي",
             nameEn: "Vegetarian",
-            color: "from-green-500 to-emerald-500",
+            color: "bg-green-500",
+            emoji: "🥗",
         },
         {
             icon: Cookie,
             nameAr: "حلويات",
             nameEn: "Desserts",
-            color: "from-pink-500 to-purple-500",
+            color: "bg-pink-500",
+            emoji: "🍰",
         },
         {
             icon: BeefIcon,
             nameAr: "لحم بقر",
             nameEn: "Beef",
-            color: "from-blue-500 to-cyan-500",
+            color: "bg-red-600",
+            emoji: "🥩",
         },
         {
             icon: UtensilsCrossed,
             nameAr: "دجاج",
             nameEn: "Chicken",
-            color: "from-amber-500 to-yellow-500",
+            color: "bg-amber-500",
+            emoji: "🍗",
         },
         {
             icon: IceCream,
             nameAr: "فطور",
             nameEn: "Breakfast",
-            color: "from-indigo-500 to-purple-500",
+            color: "bg-blue-500",
+            emoji: "🥞",
         },
     ];
 
-    const handleMouseEnter = () => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        setDropdownOpen(true);
-    };
+    const navLinks = [
+        {
+            path: "/",
+            icon: Home,
+            labelAr: "الرئيسية",
+            labelEn: "Home",
+            color: "bg-orange-500",
+        },
+        {
+            path: "/what-to-cook",
+            icon: Lightbulb,
+            labelAr: "شو اطبخ؟",
+            labelEn: "What to Cook?",
+            color: "bg-yellow-500",
+        },
+        {
+            path: "/medical-recipes",
+            icon: HeartPulse,
+            labelAr: "وصفات صحية",
+            labelEn: "Healthy",
+            color: "bg-rose-500",
+        },
+        {
+            path: "/meal-planner",
+            icon: Calendar,
+            labelAr: "مخطط الوجبات",
+            labelEn: "Planner",
+            color: "bg-purple-500",
+        },
+        {
+            path: "/kids-meals",
+            icon: Baby,
+            labelAr: "وجبات الأطفال",
+            labelEn: "Kids",
+            color: "bg-cyan-500",
+        },
+        {
+            path: "/Magazine",
+            icon: BookOpen,
+            labelAr: "مجلة جود",
+            labelEn: "Magazine",
+            color: "bg-teal-500",
+        },
+    ];
 
-    const handleMouseLeave = () => {
-        timeoutRef.current = setTimeout(() => setDropdownOpen(false), 200);
+    const handleLanguageToggle = () => {
+        changeLang(lang === "ar" ? "en" : "ar");
     };
-
-    useEffect(() => {
-        return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        };
-    }, []);
 
     return (
-        <header className="w-full sticky top-0 z-50 backdrop-blur-xl bg-gray-900/90 border-b border-gray-700/40 shadow-xl">
-            <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-6 py-3">
-                {/* Logo */}
-                <Link href="/" className="flex items-center flex-shrink-0">
-                    <img
-                        src="/images/joodw.png"
-                        alt="JOOD"
-                        className="w-24 md:w-28 h-auto object-contain hover:scale-105 transition"
-                        onError={(e) => (e.target.src = "/images/logo.png")}
-                    />
-                </Link>
-
-                {/* Desktop Menu*/}
-                <div className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm">
-                    <Link
-                        href="/"
-                        className={`flex items-center gap-1.5 transition pb-1 ${
-                            isActive("/") ? activeClass : inactiveClass
-                        }`}
-                    >
-                        <Home size={16} /> {t("الرئيسية", "Home")}
-                    </Link>
-
-                    <Link
-                        href="/what-to-cook"
-                        className={`flex items-center gap-1.5 transition pb-1 whitespace-nowrap ${
-                            isActive("/what-to-cook")
-                                ? activeClass
-                                : inactiveClass
-                        }`}
-                    >
-                        <Lightbulb size={16} /> {t("شو اطبخ؟", "What to Cook?")}
-                    </Link>
-
-                    {/* Categories Dropdown */}
-                    <div
-                        className="relative"
-                        onMouseEnter={handleMouseEnter}
-                        onMouseLeave={handleMouseLeave}
-                        ref={dropdownRef}
-                    >
-                        <button
-                            className={`flex items-center gap-1.5 transition pb-1 ${
-                                isActive("/recipes")
-                                    ? activeClass
-                                    : inactiveClass
-                            }`}
-                        >
-                            <Grid size={16} />
-                            {t("الفئات", "Categories")}
-                            <ChevronDown
-                                size={14}
-                                className={`transition-transform ${
-                                    dropdownOpen ? "rotate-180" : ""
-                                }`}
+        <>
+            {/* Header */}
+            <header className="sticky top-0 z-50 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-b-2 border-orange-200 dark:border-gray-800 shadow-xl">
+                <nav className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6">
+                    <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+                        {/* Logo */}
+                        <Link href="/" className="flex-shrink-0 group">
+                            <img
+                                src="/images/joodw.png"
+                                alt="JOOD"
+                                className="w-20 sm:w-24 md:w-28 lg:w-32 h-auto object-contain dark:brightness-0 dark:invert transition-transform group-hover:scale-105"
+                                onError={(e) =>
+                                    (e.target.src = "/images/logo.png")
+                                }
                             />
-                        </button>
+                        </Link>
 
-                        {dropdownOpen && (
-                            <div className="absolute top-full left-0 mt-2 w-64 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div className="p-2">
-                                    <Link
-                                        href="/recipes"
-                                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 transition text-gray-200 hover:text-white"
-                                    >
-                                        <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500">
-                                            <ChefHat
-                                                size={16}
-                                                className="text-white"
-                                            />
-                                        </div>
-                                        <span className="font-medium">
-                                            {t("كل الوصفات", "All Recipes")}
-                                        </span>
-                                    </Link>
-
-                                    <div className="my-2 h-px bg-gray-700"></div>
-
-                                    {categories.map((cat, idx) => {
-                                        const Icon = cat.icon;
-                                        return (
+                        {/* Desktop Navigation */}
+                        <div className="hidden lg:flex items-center flex-1 justify-center">
+                            <div className="flex items-center gap-1">
+                                {navLinks.map((link, index) => {
+                                    const Icon = link.icon;
+                                    const active = isActive(link.path);
+                                    return (
+                                        <div
+                                            key={link.path}
+                                            className="flex items-center"
+                                        >
                                             <Link
-                                                key={idx}
-                                                href={`/recipes?category=${encodeURIComponent(
-                                                    cat.nameEn
-                                                )}`}
-                                                className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-700 transition text-gray-300 hover:text-white text-sm"
+                                                href={link.path}
+                                                className="relative group"
                                             >
                                                 <div
-                                                    className={`p-1.5 rounded-lg bg-gradient-to-br ${cat.color}`}
+                                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
+                                                        active
+                                                            ? `${link.color} text-white shadow-md`
+                                                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                    }`}
                                                 >
-                                                    <Icon
-                                                        size={14}
-                                                        className="text-white"
-                                                    />
+                                                    <Icon size={16} />
+                                                    <span className="whitespace-nowrap">
+                                                        {lang === "ar"
+                                                            ? link.labelAr
+                                                            : link.labelEn}
+                                                    </span>
                                                 </div>
-                                                <span>
-                                                    {lang === "ar"
-                                                        ? cat.nameAr
-                                                        : cat.nameEn}
-                                                </span>
+                                                {active && (
+                                                    <div
+                                                        className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3/4 h-0.5 ${link.color} rounded-full`}
+                                                    ></div>
+                                                )}
                                             </Link>
-                                        );
-                                    })}
+                                            {index < navLinks.length - 1 && (
+                                                <div className="mx-1 h-5 w-px bg-gray-300 dark:bg-gray-700"></div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+
+                                {/* Separator before Categories */}
+                                <div className="mx-1 h-5 w-px bg-gray-300 dark:bg-gray-700"></div>
+
+                                {/* Categories Dropdown */}
+                                <div className="relative" ref={categoriesRef}>
+                                    <button
+                                        onClick={() =>
+                                            setCategoriesOpen(!categoriesOpen)
+                                        }
+                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
+                                            categoriesOpen
+                                                ? "bg-violet-500 text-white shadow-md"
+                                                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        }`}
+                                    >
+                                        <ChefHat size={16} />
+                                        <span>{t("الفئات", "Categories")}</span>
+                                        <ChevronDown
+                                            size={14}
+                                            className={
+                                                categoriesOpen
+                                                    ? "rotate-180 transition-transform"
+                                                    : "transition-transform"
+                                            }
+                                        />
+                                    </button>
+
+                                    {categoriesOpen && (
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border-2 border-gray-200 dark:border-gray-800 overflow-hidden">
+                                            {/* Header */}
+                                            <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-5 py-3">
+                                                <div className="flex items-center gap-2 text-white">
+                                                    <ChefHat size={18} />
+                                                    <h3 className="text-base font-black">
+                                                        {t(
+                                                            "الفئات",
+                                                            "Categories"
+                                                        )}
+                                                    </h3>
+                                                </div>
+                                            </div>
+
+                                            {/* All Recipes */}
+                                            <div className="p-3 border-b border-gray-200 dark:border-gray-800">
+                                                <Link
+                                                    href="/recipes"
+                                                    onClick={() =>
+                                                        setCategoriesOpen(false)
+                                                    }
+                                                    className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-gray-800 rounded-xl hover:shadow-md transition-all group"
+                                                >
+                                                    <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg">
+                                                        <Star
+                                                            size={18}
+                                                            className="text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">
+                                                            {t(
+                                                                "كل الوصفات",
+                                                                "All Recipes"
+                                                            )}
+                                                        </h4>
+                                                    </div>
+                                                    <ArrowRight
+                                                        size={16}
+                                                        className="text-gray-400 group-hover:translate-x-1 transition-transform"
+                                                    />
+                                                </Link>
+                                            </div>
+
+                                            {/* Categories Grid */}
+                                            <div className="p-3 grid grid-cols-2 gap-2">
+                                                {categories.map((cat, idx) => {
+                                                    const Icon = cat.icon;
+                                                    return (
+                                                        <Link
+                                                            key={idx}
+                                                            href={`/recipes?category=${encodeURIComponent(
+                                                                cat.nameEn
+                                                            )}`}
+                                                            onClick={() =>
+                                                                setCategoriesOpen(
+                                                                    false
+                                                                )
+                                                            }
+                                                            className="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all"
+                                                        >
+                                                            <div
+                                                                className={`p-1.5 ${cat.color} rounded-lg`}
+                                                            >
+                                                                <Icon
+                                                                    size={14}
+                                                                    className="text-white"
+                                                                />
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-base">
+                                                                    {cat.emoji}
+                                                                </span>
+                                                                <span className="font-bold text-xs text-gray-900 dark:text-white">
+                                                                    {lang ===
+                                                                    "ar"
+                                                                        ? cat.nameAr
+                                                                        : cat.nameEn}
+                                                                </span>
+                                                            </div>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        )}
+                        </div>
+
+                        {/* Right Section */}
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            {/* Language Toggle Button - Desktop */}
+                            <button
+                                onClick={handleLanguageToggle}
+                                className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-500 border-2 border-gray-300 dark:border-gray-600 hover:border-orange-400 rounded-lg transition-all font-semibold text-sm shadow-md hover:shadow-lg group"
+                            >
+                                <Globe
+                                    size={16}
+                                    className="text-gray-700 dark:text-gray-300 group-hover:text-white transition-colors"
+                                />
+                                <span className="text-lg">
+                                    {lang === "ar" ? "🇸🇦" : "🇺🇸"}
+                                </span>
+                                <span className="text-gray-800 dark:text-gray-200 group-hover:text-white transition-colors">
+                                    {lang === "ar" ? "ع" : "EN"}
+                                </span>
+                            </button>
+
+                            {/* Mobile Menu Button */}
+                            <button
+                                onClick={() => setMobileOpen(!mobileOpen)}
+                                className="lg:hidden p-2 sm:p-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg shadow-lg active:scale-95 transition-transform"
+                            >
+                                {mobileOpen ? (
+                                    <X size={20} className="sm:w-5 sm:h-5" />
+                                ) : (
+                                    <Menu size={20} className="sm:w-5 sm:h-5" />
+                                )}
+                            </button>
+                        </div>
                     </div>
-
-                    <Link
-                        href="/medical-recipes"
-                        className={`flex items-center gap-1.5 transition pb-1 ${
-                            isActive("/medical-recipes")
-                                ? activeClass
-                                : inactiveClass
-                        }`}
-                    >
-                        <HeartPulseIcon size={16} />{" "}
-                        {t("وصفات صحية", "Healthy Recipes")}
-                    </Link>
-
-                    <Link
-                        href="/meal-planner"
-                        className={`flex items-center gap-1.5 pb-1 ${
-                            isActive("/meal-planner")
-                                ? activeClass
-                                : inactiveClass
-                        }`}
-                    >
-                        <ListCheckIcon size={16} />{" "}
-                        {t("مخطط الوجبات", "Meal Planner")}
-                    </Link>
-
-                    <Link
-                        href="/kids-meals"
-                        className={`flex items-center gap-1.5 pb-1 ${
-                            isActive("/kids-meals")
-                                ? activeClass
-                                : inactiveClass
-                        }`}
-                    >
-                        <BabyIcon size={16} />{" "}
-                        {t("وجبات الأطفال", "Kids Meals")}
-                    </Link>
-
-                    <Link
-                        href="/Magazine"
-                        className={`flex items-center gap-1.5 transition pb-1 ${
-                            isActive("/Magazine") ? activeClass : inactiveClass
-                        }`}
-                        aria-current={isActive("/Magazine") ? "page" : undefined}
-                    >
-                        <BookOpen size={16} aria-hidden="true" />{" "}
-                        {t("مجلة جود", "Jood Magazine")}
-                    </Link>
-                </div>
-
-                {/* Language + Auth (Desktop) */}
-                <div className="hidden lg:flex items-center gap-3">
-                    <button
-                        onClick={() => changeLang(lang === "ar" ? "en" : "ar")}
-                        className="px-4 py-2 bg-gray-800 text-gray-200 rounded-lg hover:bg-gray-700 transition text-sm font-medium"
-                    >
-                        {lang === "ar" ? "EN" : "ع"}
-                    </button>
-{/* 
-                    {!isLoggedIn && !isAdmin ? (
-                        <Link
-                            href="/login"
-                            className={`px-5 py-2 rounded-lg flex items-center gap-2 text-white font-medium transition ${
-                                isActive("/login")
-                                    ? "bg-green-700"
-                                    : "bg-green-600 hover:bg-green-700"
-                            }`}
-                        >
-                            <LogIn size={16} /> {t("دخول", "Login")}
-                        </Link>
-                    ) : isAdmin ? (
-                        <Link
-                            href="/admin"
-                            className="px-5 py-2 bg-red-600 hover:bg-red-700 rounded-lg flex items-center gap-2 text-white font-medium transition"
-                        >
-                            <User size={16} /> {t("الإدارة", "Admin")}
-                        </Link>
-                    ) : (
-                        <Link
-                            href="/dashboard"
-                            className={`px-5 py-2 rounded-lg flex items-center gap-2 text-white font-medium transition ${
-                                isActive("/dashboard")
-                                    ? "bg-green-700"
-                                    : "bg-green-600 hover:bg-green-700"
-                            }`}
-                        >
-                            <User size={16} /> {t("حسابي", "My Account")}
-                        </Link>
-                    )} */}
-                </div>
-
-                {/* Mobile Menu Toggle */}
-                <button
-                    className="lg:hidden text-white p-2"
-                    onClick={() => setOpen(!open)}
-                >
-                    {open ? <X size={28} /> : <Menu size={28} />}
-                </button>
-            </nav>
+                </nav>
+            </header>
 
             {/* Mobile Menu */}
-            {open && (
-                <div className="lg:hidden px-4 py-6 bg-gray-900/95 backdrop-blur-xl border-t border-gray-700">
-                    <div className="flex flex-col gap-3 text-gray-200">
-                        <Link
-                            href="/"
-                            className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                                isActive("/")
-                                    ? "bg-green-600 text-white"
-                                    : "hover:bg-gray-800"
-                            }`}
-                            onClick={() => setOpen(false)}
-                        >
-                            <Home size={20} /> {t("الرئيسية", "Home")}
-                        </Link>
+            {mobileOpen && (
+                <div className="lg:hidden fixed inset-0 z-40 bg-white dark:bg-gray-950">
+                    <div className="h-full overflow-y-auto pt-20 sm:pt-24 pb-6 px-4 sm:px-6">
+                        {/* Nav Links */}
+                        <div className="space-y-2 mb-6">
+                            {navLinks.map((link) => {
+                                const Icon = link.icon;
+                                const active = isActive(link.path);
+                                return (
+                                    <Link
+                                        key={link.path}
+                                        href={link.path}
+                                        onClick={() => setMobileOpen(false)}
+                                        className={`flex items-center gap-3 p-3 sm:p-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 ${
+                                            active
+                                                ? `${link.color} text-white shadow-lg`
+                                                : "text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800"
+                                        }`}
+                                    >
+                                        <Icon
+                                            size={18}
+                                            className="flex-shrink-0"
+                                        />
+                                        <span>
+                                            {lang === "ar"
+                                                ? link.labelAr
+                                                : link.labelEn}
+                                        </span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
 
-                        <Link
-                            href="/what-to-cook"
-                            className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                                isActive("/what-to-cook")
-                                    ? "bg-green-600 text-white"
-                                    : "hover:bg-gray-800"
-                            }`}
-                            onClick={() => setOpen(false)}
-                        >
-                            <Lightbulb size={20} />{" "}
-                            {t("شو اطبخ؟", "What to Cook?")}
-                        </Link>
-
-                        <div>
+                        {/* Categories */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-3 px-2">
+                                {t("الفئات", "CATEGORIES")}
+                            </h3>
                             <Link
                                 href="/recipes"
-                                className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                                    isActive("/recipes")
-                                        ? "bg-green-600 text-white"
-                                        : "hover:bg-gray-800"
-                                }`}
-                                onClick={() => setOpen(false)}
+                                onClick={() => setMobileOpen(false)}
+                                className="flex items-center gap-3 p-3 sm:p-3.5 mb-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-transform"
                             >
-                                <ChefHat size={20} />{" "}
-                                {t("كل الوصفات", "All Recipes")}
+                                <Star size={18} className="flex-shrink-0" />
+                                <span>{t("كل الوصفات", "All Recipes")}</span>
                             </Link>
-                            <div className="mt-2 ml-8 space-y-1">
+                            <div className="grid grid-cols-2 gap-2">
                                 {categories.map((cat, idx) => {
                                     const Icon = cat.icon;
                                     return (
@@ -355,18 +417,18 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                                             href={`/recipes?category=${encodeURIComponent(
                                                 cat.nameEn
                                             )}`}
-                                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800 transition text-sm"
-                                            onClick={() => setOpen(false)}
+                                            onClick={() => setMobileOpen(false)}
+                                            className="flex flex-col items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-xl active:scale-95 transition-transform"
                                         >
                                             <div
-                                                className={`p-1.5 rounded bg-gradient-to-br ${cat.color}`}
+                                                className={`p-2 ${cat.color} rounded-lg`}
                                             >
                                                 <Icon
-                                                    size={14}
+                                                    size={16}
                                                     className="text-white"
                                                 />
                                             </div>
-                                            <span>
+                                            <span className="text-xs font-bold text-gray-900 dark:text-white text-center">
                                                 {lang === "ar"
                                                     ? cat.nameAr
                                                     : cat.nameEn}
@@ -377,101 +439,38 @@ export default function Navbar({ isLoggedIn = false, isAdmin = false }) {
                             </div>
                         </div>
 
-                        <Link
-                            href="/medical-recipes"
-                            className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                                isActive("/medical-recipes")
-                                    ? "bg-green-600 text-white"
-                                    : "hover:bg-gray-800"
-                            }`}
-                            onClick={() => setOpen(false)}
-                        >
-                            <HeartPulseIcon size={20} />{" "}
-                            {t("وصفات صحية", "Healthy Recipes")}
-                        </Link>
-
-                        <Link
-                            href="/meal-planner"
-                            className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                                isActive("/meal-planner")
-                                    ? "bg-green-600 text-white"
-                                    : "hover:bg-gray-800"
-                            }`}
-                            onClick={() => setOpen(false)}
-                        >
-                            <ListCheckIcon size={20} />{" "}
-                            {t("مخطط الوجبات", "Meal Planner")}
-                        </Link>
-
-                        <Link
-                            href="/kids-meals"
-                            className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                                isActive("/kids-meals")
-                                    ? "bg-green-600 text-white"
-                                    : "hover:bg-gray-800"
-                            }`}
-                            onClick={() => setOpen(false)}
-                        >
-                            <BabyIcon size={20} />{" "}
-                            {t("وجبات الأطفال", "Kids Meals")}
-                        </Link>
-
-                        <Link
-                            href="/Magazine"
-                            className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                                isActive("/Magazine")
-                                    ? "bg-green-600 text-white"
-                                    : "hover:bg-gray-800"
-                            }`}
-                            onClick={() => setOpen(false)}
-                        >
-                            <BookOpen size={20} />{" "}
-                            {t("مجلة جود", "Jood Magazine")}
-                        </Link>
-
-                        <div className="mt-6 pt-6 border-t border-gray-700 space-y-4">
+                        {/* Language Toggle - Mobile */}
+                        <div>
+                            <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-3 px-2">
+                                {t("اللغة", "LANGUAGE")}
+                            </h3>
                             <button
                                 onClick={() => {
-                                    changeLang(lang === "ar" ? "en" : "ar");
-                                    setOpen(false);
+                                    handleLanguageToggle();
+                                    setMobileOpen(false);
                                 }}
-                                className="w-full py-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition font-medium"
+                                className="w-full flex items-center justify-between gap-3 p-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold shadow-lg active:scale-95 transition-transform"
                             >
-                                {lang === "ar" ? "English" : "عربي"}
+                                <div className="flex items-center gap-3">
+                                    <Globe size={20} />
+                                    <span className="text-2xl">
+                                        {lang === "ar" ? "🇸🇦" : "🇺🇸"}
+                                    </span>
+                                    <span>
+                                        {lang === "ar" ? "العربية" : "English"}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-lg">
+                                    <span className="text-sm font-black">
+                                        {lang === "ar" ? "ع" : "EN"}
+                                    </span>
+                                    <ArrowRight size={16} />
+                                </div>
                             </button>
-
-                            {!isLoggedIn && !isAdmin ? (
-                                <Link
-                                    href="/login"
-                                    className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg flex items-center justify-center gap-2 text-white font-medium transition"
-                                    onClick={() => setOpen(false)}
-                                >
-                                    <LogIn size={20} />{" "}
-                                    {t("تسجيل الدخول", "Sign In")}
-                                </Link>
-                            ) : isAdmin ? (
-                                <Link
-                                    href="/admin"
-                                    className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center gap-2 text-white font-medium transition"
-                                    onClick={() => setOpen(false)}
-                                >
-                                    <User size={20} />{" "}
-                                    {t("لوحة الإدارة", "Admin Panel")}
-                                </Link>
-                            ) : (
-                                <Link
-                                    href="/dashboard"
-                                    className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg flex items-center justify-center gap-2 text-white font-medium transition"
-                                    onClick={() => setOpen(false)}
-                                >
-                                    <User size={20} />{" "}
-                                    {t("حسابي", "My Account")}
-                                </Link>
-                            )}
                         </div>
                     </div>
                 </div>
             )}
-        </header>
+        </>
     );
 }
