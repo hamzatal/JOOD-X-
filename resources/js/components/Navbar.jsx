@@ -331,7 +331,7 @@ export default function Navbar() {
                             {/* Language Toggle Button - Desktop */}
                             <button
                                 onClick={handleLanguageToggle}
-                                className="hidden lg:flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-500 border-2 border-gray-300 dark:border-gray-600 hover:border-orange-400 rounded-lg transition-all font-semibold text-sm shadow-md hover:shadow-lg group"
+                                className="hidden lg:flex items-center gap-2 px-4 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-r hover:from-green-500 hover:to-green-500 border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 rounded-lg transition-all font-semibold text-sm shadow-md hover:shadow-lg group"
                             >
                                 <Globe
                                     size={16}
